@@ -13,26 +13,43 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), '../data/experiences.json')
 SKILLS_DIR = os.path.expanduser('~/.openclaw/workspace/skills')
 NOWCODER_CLI = os.path.join(SKILLS_DIR, 'follow-nowcoder/scripts/cli.py')
 MAIMAI_BIN = '/root/.local/bin/maimai'
-MAX_ITEMS = 100
+MAX_ITEMS = 300  # 扩大上限以容纳历史存量
 
-# ── 相关性关键词（命中任一才保留）──
-AGENT_KEYWORDS = [
-    'ai agent', 'llm', 'agent', '大模型', '多模态', 'rag', '向量',
-    '人工智能', '机器学习', 'nlp', '自然语言', 'transformer',
-    'gpt', 'claude', 'gemini', '推理', '微调', 'fine-tun',
-    '算法工程师', '实习', '面经', '面试', '腾讯', '字节', '阿里',
+# ── 核心关键词（必须命中，才算 AI/LLM/Agent 相关）──
+# 使用精确短语，避免"字节/前端"这类泛化词误命中
+AGENT_CORE_KEYWORDS = [
+    # Agent 直接相关
+    'ai agent', 'agent面经', 'agent工程', 'agent开发', 'agent实习',
+    'multi-agent', 'multiagent', '多agent',
+    # LLM / 大模型 精确组合
+    '大模型面经', '大模型工程', '大模型算法', '大模型实习', '大模型应用',
+    '大模型开发', '大模型方向', '大模型岗', 'llm面经', 'llm工程', 'llm算法',
+    # RAG / 向量
+    'rag面试', 'rag面经', '检索增强', '向量数据库面', 'embedding面',
+    # 具体技术栈
+    'langchain', 'langgraph', 'autogen', 'crewai', 'llamaindex',
+    'vllm面', '模型量化面', '模型压缩面', 'lora面', '微调面试',
+    # 具体模型
+    'chatgpt面', 'gpt-4面', 'claude面经', 'gemini面经',
+    '千问面经', '文心面经', '豆包面经', '通义面经', 'kimi面经',
+    # NLP/ML 精确组合（需带"工程师"或"算法"或"面经"）
+    'nlp工程师面', 'nlp算法面', 'nlp面经',
+    'ai算法工程师面', 'ai engineer面', 'aigc面经', 'aigc工程',
+    '推理工程师面', '机器学习工程师面', '深度学习工程师面',
+    # MCP / function call
+    'mcp面试', 'function call面', '工具调用面',
 ]
 
-# ── 合规黑名单（命中任一则丢弃）──
+# ── 合规黑名单 ──
 COMPLIANCE_BLOCKLIST = [
-    'dictatorship', 'tiananmen', '天安门', 'ccp', '法轮',
-    'falun', '台独', '藏独', '港独', '新疆独',
-    '色情', '博彩', '赌博', '代刷', '兼职刷单',
+    'dictatorship', 'tiananmen', '天安门', 'ccp', '法轮', 'falun',
+    '台独', '藏独', '港独', '色情', '博彩', '赌博', '代刷', '兼职刷单',
 ]
 
 def is_relevant(text):
+    """必须命中 AI/LLM/Agent 核心精确短语"""
     t = text.lower()
-    return any(kw in t for kw in AGENT_KEYWORDS)
+    return any(kw in t for kw in AGENT_CORE_KEYWORDS)
 
 def is_compliant(title, summary=''):
     text = (title + ' ' + summary).lower()
@@ -56,8 +73,8 @@ def detect_company(text):
 
 def detect_position(text):
     t = text.lower()
-    if any(k in t for k in ['大模型', 'llm', 'agent', 'nlp']): return 'LLM/Agent 工程师'
-    if any(k in t for k in ['算法', 'algorithm', 'research', '研究员']): return 'AI 算法工程师'
+    if any(k in t for k in ['大模型', 'llm', 'agent', 'nlp', 'aigc']): return 'LLM/Agent 工程师'
+    if any(k in t for k in ['算法', 'algorithm', 'research', '研究员', '机器学习', '深度学习']): return 'AI 算法工程师'
     if any(k in t for k in ['推荐', '搜索']): return '推荐/搜索工程师'
     if any(k in t for k in ['实习', 'intern']): return '实习生'
     return 'AI/技术岗'
@@ -85,7 +102,7 @@ def load_existing():
     except: return {"items": [], "updated_at": ""}
 
 def verify_nowcoder_url(url):
-    """验证牛客 URL 是否真实可访问（过滤内容不存在的帖子）"""
+    """验证牛客 URL 真实可访问（读足够多内容捕获嵌入 JSON 里的错误信息）"""
     if not url:
         return False
     try:
@@ -94,7 +111,6 @@ def verify_nowcoder_url(url):
             headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0'}
         )
         with urllib.request.urlopen(req, timeout=8) as r:
-            # 读足够多以覆盖嵌入JSON中的错误信息
             html = r.read(65536).decode('utf-8', errors='replace')
             if '内容不存在' in html or '帖子不存在' in html:
                 return False
@@ -109,13 +125,25 @@ def fetch_nowcoder():
         return []
 
     items = []
-    queries = ['AI Agent', '大模型 面经', 'LLM 工程师', 'RAG 向量数据库']
+    # 搜索词精确对应 AI Agent 方向，覆盖更多组合
+    queries = [
+        'AI Agent',
+        'LLM Agent',
+        'Agent工程师',
+        '大模型面经',
+        '大模型算法',
+        '大模型实习',
+        'RAG面试',
+        'LLM工程师',
+        'AIGC面经',
+        'NLP算法工程师',
+    ]
 
     for query in queries:
         try:
             result = subprocess.run(
                 ['python3', NOWCODER_CLI, 'search-posts', query],
-                capture_output=True, text=True, timeout=20
+                capture_output=True, text=True, timeout=30
             )
             if result.returncode != 0 or not result.stdout:
                 continue
@@ -123,19 +151,23 @@ def fetch_nowcoder():
             records = data.get('results', {}).get(query, {}).get('records', [])
             for rec in records:
                 title = rec.get('title', '')
-                # 相关性 + 合规双重过滤
-                if not title or not is_relevant(title):
+                if not title:
+                    continue
+                # 精确相关性过滤
+                if not is_relevant(title):
                     continue
                 if not is_compliant(title):
                     continue
-                # 阅读量 >= 30 初步过滤刚发即删帖
-                if rec.get('view_count', 0) < 30:
+                # 阅读量 >= 20 过滤刚发即删帖
+                if rec.get('view_count', 0) < 20:
                     continue
+
                 uuid = rec.get('uuid', '')
                 content_id = rec.get('content_id', '')
                 rc_type = rec.get('rc_type', 0)
-                # rc_type=201: 面经帖，uuid -> /feed/main/detail/{uuid}
-                # rc_type=207: 动态帖，content_id -> /discuss/{content_id}
+
+                # rc_type=201 面经帖: uuid -> /feed/main/detail/{uuid}
+                # rc_type=207 动态帖: content_id(纯数字) -> /discuss/{content_id}
                 if rc_type == 201 and uuid:
                     url = f'https://www.nowcoder.com/feed/main/detail/{uuid}'
                 elif rc_type == 207 and content_id:
@@ -146,13 +178,14 @@ def fetch_nowcoder():
                     url = f'https://www.nowcoder.com/discuss/{content_id}'
                 else:
                     continue
+
                 ts = rec.get('created_at', 0)
                 created = datetime.datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d') if ts else datetime.datetime.now().strftime('%Y-%m-%d')
                 item = {
                     'id': hashlib.md5((title + uuid + content_id).encode()).hexdigest()[:12],
                     'title': title,
                     'url': url,
-                    'summary': f'阅读: {rec.get("view_count",0)} | 评论: {rec.get("comment_count",0)} | 来源: 牛客网',
+                    'summary': f'阅读: {rec.get("view_count",0)} | 评论: {rec.get("comment_count",0)} | 来源: 牛客网 | 搜索词: {query}',
                     'company': detect_company(title + rec.get('company', '')),
                     'platform': 'nowcoder',
                     'position': rec.get('job_title', '') or detect_position(title),
@@ -165,18 +198,19 @@ def fetch_nowcoder():
             pass
 
     items = dedup(items)
+    total_before = len(items)
 
     # 并行验证 URL 可访问性
     if items:
         valid = []
-        with ThreadPoolExecutor(max_workers=5) as ex:
+        with ThreadPoolExecutor(max_workers=8) as ex:
             futures = {ex.submit(verify_nowcoder_url, it['url']): it for it in items}
             for fut in as_completed(futures):
                 if fut.result():
                     valid.append(futures[fut])
         items = valid
 
-    print(f'[exp] 牛客获取 {len(items)} 条（已验证可访问）')
+    print(f'[exp] 牛客: 过滤后 {total_before} 条，URL验证通过 {len(items)} 条')
     return items
 
 # ── 脉脉（可选，有登录态时使用）──
@@ -197,7 +231,7 @@ def fetch_maimai():
         return []
     items = []
     try:
-        for kw in ['AI Agent', '大模型 面试']:
+        for kw in ['AI Agent面经', '大模型算法工程师', 'LLM工程师面试']:
             result = subprocess.run(
                 [MAIMAI_BIN, 'search', kw, '--section', 'gossips', '--limit', '10', '--json'],
                 capture_output=True, text=True, timeout=20,
