@@ -10,6 +10,65 @@
         "ReAct 在实际 Agent 系统中如何实现？",
         "ReAct 的局限性有哪些？"
       ],
+      "refs": [
+        {
+          "title": "Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models. ICLR 2023",
+          "url": "https://arxiv.org/abs/2210.03629"
+        },
+        {
+          "title": "LangChain ReAct Agent 文档",
+          "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"
+        },
+        {
+          "title": "腾讯 AI Agent 工程师 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent"
+        }
+      ],
+      "answer": "<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。<sup class='cite'><a href='https://arxiv.org/abs/2210.03629' target='_blank'>[1]</a></sup></p>\n\n<h3>核心机制</h3>\n<ul>\n<li><strong>Thought</strong>：模型的内部推理过程，分析当前状态，规划下一步</li>\n<li><strong>Action</strong>：调用外部工具（搜索、计算器、API 等）</li>\n<li><strong>Observation</strong>：工具返回的结果，作为下一轮推理的输入</li>\n</ul>\n\n<h3>与 CoT 的区别</h3>\n<ul>\n<li>CoT 只有推理，没有与外部世界交互的能力</li>\n<li>ReAct 可以获取实时信息，解决知识截止日期问题</li>\n<li>ReAct 的推理过程更透明可解释</li>\n</ul>\n\n<h3>实现示例（伪代码）</h3>\n<pre>while not done:\n    thought = llm.think(context)       # Reasoning\n    action = llm.decide_action(thought) # Planning\n    observation = tools.execute(action) # Acting\n    context.append(thought, action, observation)\n    if action == \"FINISH\": break</pre>\n\n<h3>局限性</h3>\n<ul>\n<li>长任务中 context window 容易溢出</li>\n<li>工具调用失败时缺乏健壮的错误恢复</li>\n<li>推理步骤过多会导致 token 消耗极大</li>\n</ul>",
+      "tips": "重点强调 Thought-Action-Observation 循环，以及与 CoT 的本质区别。面试官通常会追问如何处理工具调用失败的情况。",
+      "date": "2026-05-14",
+      "id": "2026-05-14-0"
+    },
+    {
+      "title": "在设计多 Agent 协作系统时，如何解决 Agent 之间的通信协调和任务分配问题？",
+      "difficulty": "hard",
+      "source": "阿里/百度 大模型岗位",
+      "questions": [
+        "多 Agent 系统的常见架构模式（Hierarchical/Flat/Hybrid）？",
+        "如何设计 Agent 间的消息传递协议？",
+        "任务分配策略：静态分配 vs 动态分配？",
+        "如何处理 Agent 之间的冲突和死锁？"
+      ],
+      "answer": "<p>多 Agent 系统（MAS）设计是 AI Agent 工程中的核心难题，主要涉及架构设计、通信协议和协调机制三个层面。</p>\n\n<h3>常见架构模式</h3>\n<ul>\n<li><strong>层级式（Hierarchical）</strong>：Orchestrator Agent 负责任务分解和分配，Sub-Agent 负责执行。代表：AutoGen、CrewAI</li>\n<li><strong>扁平式（Flat）</strong>：Agent 之间平等协作，通过共享状态或消息队列通信</li>\n<li><strong>混合式（Hybrid）</strong>：结合两种模式，适合复杂场景</li>\n</ul>\n\n<h3>通信协调方案</h3>\n<ul>\n<li><strong>共享内存</strong>：所有 Agent 读写同一个状态存储（如 Redis）</li>\n<li><strong>消息队列</strong>：基于 Pub/Sub 模式（如 Kafka），解耦 Agent 间依赖</li>\n<li><strong>直接调用</strong>：Orchestrator 直接调用 Sub-Agent API</li>\n</ul>\n\n<h3>任务分配策略</h3>\n<ul>\n<li>基于 Agent 能力描述（Capability Registry）进行匹配</li>\n<li>动态负载均衡，避免单个 Agent 成为瓶颈</li>\n<li>使用 DAG（有向无环图）描述任务依赖关系</li>\n</ul>",
+      "tips": "结合具体框架（如 LangGraph、AutoGen）来回答，体现工程实践经验。",
+      "date": "2026-05-14",
+      "id": "2026-05-14-1"
+    },
+    {
+      "title": "解释 RAG（检索增强生成）在 Agent 系统中的作用，以及如何优化 RAG 的检索质量？",
+      "difficulty": "medium",
+      "source": "通用 AI 工程岗位",
+      "questions": [
+        "Naive RAG vs Advanced RAG vs Modular RAG 的区别？",
+        "向量检索的常用相似度算法？",
+        "如何解决 Chunk 粒度问题？",
+        "Re-ranking 的作用和常见方案？"
+      ],
+      "answer": "<p>RAG 是 Agent 系统中解决 LLM 知识局限性的核心技术，通过检索外部知识库来增强生成质量。</p>\n\n<h3>RAG 演进</h3>\n<ul>\n<li><strong>Naive RAG</strong>：简单的向量检索 + 拼接 Context + 生成</li>\n<li><strong>Advanced RAG</strong>：引入 Query 改写、混合检索、Re-ranking</li>\n<li><strong>Modular RAG</strong>：各模块可替换，支持路由、融合、自适应检索</li>\n</ul>\n\n<h3>检索质量优化关键点</h3>\n<ul>\n<li><strong>Chunking 策略</strong>：固定大小 vs 语义分块，chunk 重叠比例设置（建议 10-20%）</li>\n<li><strong>Embedding 选择</strong>：BGE-M3、text-embedding-3 等，注意领域适配</li>\n<li><strong>混合检索</strong>：向量检索 + BM25 关键词检索，用 RRF 融合排序</li>\n<li><strong>Re-ranking</strong>：使用 Cross-Encoder 对 Top-K 结果重排序，提升精度</li>\n<li><strong>HyDE</strong>：先让 LLM 生成假设性答案，再用该答案检索</li>\n</ul>\n\n<h3>常见坑</h3>\n<ul>\n<li>Context 超长导致 LLM \"迷失在中间\"（Lost in the Middle）</li>\n<li>Chunk 切割破坏语义完整性</li>\n<li>检索到相关但不准确的内容，引入噪音</li>\n</ul>",
+      "tips": "面试时能提到 HyDE、RAG-Fusion、Self-RAG 等进阶方案会加分很多。",
+      "date": "2026-05-14",
+      "id": "2026-05-14-2"
+    },
+    {
+      "title": "请详细解释 AI Agent 的 ReAct 框架，以及它如何解决 LLM 推理和行动分离的问题？",
+      "difficulty": "medium",
+      "source": "腾讯/字节 AI 岗位 JD",
+      "questions": [
+        "ReAct = Reasoning + Acting，核心思想是什么？",
+        "与 Chain-of-Thought 相比，ReAct 的优势在哪里？",
+        "ReAct 在实际 Agent 系统中如何实现？",
+        "ReAct 的局限性有哪些？"
+      ],
       "answer": "<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。</p>\n\n<h3>核心机制</h3>\n<ul>\n<li><strong>Thought</strong>：模型的内部推理过程，分析当前状态，规划下一步</li>\n<li><strong>Action</strong>：调用外部工具（搜索、计算器、API 等）</li>\n<li><strong>Observation</strong>：工具返回的结果，作为下一轮推理的输入</li>\n</ul>\n\n<h3>与 CoT 的区别</h3>\n<ul>\n<li>CoT 只有推理，没有与外部世界交互的能力</li>\n<li>ReAct 可以获取实时信息，解决知识截止日期问题</li>\n<li>ReAct 的推理过程更透明可解释</li>\n</ul>\n\n<h3>实现示例（伪代码）</h3>\n<pre>while not done:\n    thought = llm.think(context)       # Reasoning\n    action = llm.decide_action(thought) # Planning\n    observation = tools.execute(action) # Acting\n    context.append(thought, action, observation)\n    if action == \"FINISH\": break</pre>\n\n<h3>局限性</h3>\n<ul>\n<li>长任务中 context window 容易溢出</li>\n<li>工具调用失败时缺乏健壮的错误恢复</li>\n<li>推理步骤过多会导致 token 消耗极大</li>\n</ul>",
       "tips": "重点强调 Thought-Action-Observation 循环，以及与 CoT 的本质区别。面试官通常会追问如何处理工具调用失败的情况。",
       "date": "2026-05-13",
@@ -46,5 +105,5 @@
       "id": "2026-05-13-2"
     }
   ],
-  "updated_at": "2026-05-13T20:07:08.110095"
+  "updated_at": "2026-05-14T00:50:24.908205"
 }
