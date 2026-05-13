@@ -85,7 +85,7 @@ def load_existing():
     except: return {"items": [], "updated_at": ""}
 
 def verify_nowcoder_url(url):
-    """验证牛客 URL 是否真实可访问（过滤"内容不存在"页面）"""
+    """验证牛客 URL 是否真实可访问（过滤内容不存在的帖子）"""
     if not url:
         return False
     try:
@@ -93,8 +93,9 @@ def verify_nowcoder_url(url):
             url,
             headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0'}
         )
-        with urllib.request.urlopen(req, timeout=6) as r:
-            html = r.read(8192).decode('utf-8', errors='replace')
+        with urllib.request.urlopen(req, timeout=8) as r:
+            # 读足够多以覆盖嵌入JSON中的错误信息
+            html = r.read(65536).decode('utf-8', errors='replace')
             if '内容不存在' in html or '帖子不存在' in html:
                 return False
             return True
@@ -133,10 +134,16 @@ def fetch_nowcoder():
                 uuid = rec.get('uuid', '')
                 content_id = rec.get('content_id', '')
                 rc_type = rec.get('rc_type', 0)
-                if rc_type == 207 and content_id:
-                    url = f'https://www.nowcoder.com/feed/main/detail/{content_id}'
+                # rc_type=201: 面经帖，uuid -> /feed/main/detail/{uuid}
+                # rc_type=207: 动态帖，content_id -> /discuss/{content_id}
+                if rc_type == 201 and uuid:
+                    url = f'https://www.nowcoder.com/feed/main/detail/{uuid}'
+                elif rc_type == 207 and content_id:
+                    url = f'https://www.nowcoder.com/discuss/{content_id}'
                 elif uuid:
                     url = f'https://www.nowcoder.com/feed/main/detail/{uuid}'
+                elif content_id:
+                    url = f'https://www.nowcoder.com/discuss/{content_id}'
                 else:
                     continue
                 ts = rec.get('created_at', 0)
