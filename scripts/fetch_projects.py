@@ -12,6 +12,7 @@ import sys
 import subprocess
 import datetime
 import hashlib
+import urllib.parse
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), '../data/projects.json')
 MAX_ITEMS = 60
@@ -148,6 +149,8 @@ def fetch_github_search():
                             'trending': False,
                             'language': lang_detected,
                             'category': detect_category(name, desc),
+                            'source_label': 'GitHub Search',
+                            'source_url': f'https://github.com/search?q={urllib.parse.quote(query)}&type=repositories&s=stars',
                             'fetched_at': datetime.datetime.now().isoformat(),
                             'updated_at': pushed,
                         }

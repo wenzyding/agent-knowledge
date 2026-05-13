@@ -70,7 +70,12 @@ def generate_interview_item(date_str, topic_num):
                 "ReAct 在实际 Agent 系统中如何实现？",
                 "ReAct 的局限性有哪些？"
             ],
-            "answer": """<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。</p>
+            "refs": [
+                {"title": "Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models. ICLR 2023", "url": "https://arxiv.org/abs/2210.03629"},
+                {"title": "LangChain ReAct Agent 文档", "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"},
+                {"title": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent"}
+            ],
+            "answer": """<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。<sup class='cite'><a href='https://arxiv.org/abs/2210.03629' target='_blank'>[1]</a></sup></p>
 
 <h3>核心机制</h3>
 <ul>

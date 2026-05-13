@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Agent 知识库</title>
+  <!-- marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
       --bg: #0f1117;
@@ -19,48 +21,31 @@
       --text2: #94a3b8;
       --text3: #64748b;
       --radius: 10px;
-      --shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif; min-height: 100vh; }
 
     /* ── Header ── */
     .header {
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 60px;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 0 32px; display: flex; align-items: center;
+      justify-content: space-between; height: 60px;
       position: sticky; top: 0; z-index: 100;
     }
     .header-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: var(--accent); }
-    .header-logo span { font-size: 22px; }
     .header-meta { font-size: 12px; color: var(--text3); }
     .header-meta b { color: var(--green); }
 
     /* ── Tabs ── */
     .tabs {
-      display: flex;
-      gap: 2px;
-      background: var(--bg2);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      overflow-x: auto;
+      display: flex; gap: 2px; background: var(--bg2);
+      border-bottom: 1px solid var(--border); padding: 0 32px; overflow-x: auto;
     }
     .tab-btn {
-      padding: 14px 22px;
-      cursor: pointer;
-      border: none;
-      background: none;
-      color: var(--text2);
-      font-size: 14px;
-      font-weight: 500;
-      border-bottom: 3px solid transparent;
-      transition: all .2s;
-      white-space: nowrap;
-      display: flex; align-items: center; gap: 6px;
+      padding: 14px 22px; cursor: pointer; border: none; background: none;
+      color: var(--text2); font-size: 14px; font-weight: 500;
+      border-bottom: 3px solid transparent; transition: all .2s;
+      white-space: nowrap; display: flex; align-items: center; gap: 6px;
     }
     .tab-btn:hover { color: var(--text); }
     .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -72,33 +57,44 @@
     .tab-panel.active { display: block; }
 
     /* ── Section header ── */
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 20px;
-    }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
     .section-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .section-subtitle { font-size: 13px; color: var(--text3); margin-top: 3px; }
-    .update-badge {
-      font-size: 11px; color: var(--text3); background: var(--bg3);
-      padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);
-    }
+    .update-badge { font-size: 11px; color: var(--text3); background: var(--bg3); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); }
     .update-badge b { color: var(--green); }
 
-    /* ── Cards ── */
-    .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 14px;
-      overflow: hidden;
-      transition: border-color .2s;
-    }
+    /* ── Generic card ── */
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; overflow: hidden; transition: border-color .2s; }
     .card:hover { border-color: var(--accent); }
 
-    /* ── Tab1: Interview ── */
+    /* ── Source citation system ── */
+    sup.cite a {
+      color: var(--accent2); font-size: 10px; text-decoration: none;
+      background: rgba(167,139,250,0.12); padding: 1px 4px; border-radius: 3px;
+      margin-left: 1px; vertical-align: super; line-height: 1;
+      transition: background .15s;
+    }
+    sup.cite a:hover { background: rgba(167,139,250,0.3); }
+    .source-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 2px 9px; border-radius: 4px;
+      border: 1px solid var(--border); color: var(--text2);
+      background: var(--bg3); text-decoration: none; cursor: pointer;
+      transition: all .15s;
+    }
+    .source-pill:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,140,255,0.08); }
+    .source-pill.platform { background: var(--bg3); }
+    .refs-section { margin-top: 20px; padding: 14px 16px; background: var(--bg3); border-radius: 6px; border: 1px solid var(--border); }
+    .refs-section h4 { font-size: 11px; color: var(--text3); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .refs-list { display: flex; flex-direction: column; gap: 4px; }
+    .ref-item { font-size: 12px; color: var(--text2); display: flex; gap: 6px; align-items: baseline; }
+    .ref-num { color: var(--accent2); font-weight: 600; flex-shrink: 0; min-width: 18px; }
+    .ref-item a { color: var(--accent); text-decoration: none; }
+    .ref-item a:hover { text-decoration: underline; }
+
+    /* ── Tab1: Interviews ── */
     .interview-card .card-header {
-      padding: 16px 20px;
-      cursor: pointer;
+      padding: 16px 20px; cursor: pointer;
       display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
       user-select: none;
     }
@@ -110,40 +106,27 @@
     .diff-hard { background: rgba(248,113,113,0.15); color: var(--red); }
     .diff-medium { background: rgba(251,191,36,0.15); color: var(--yellow); }
     .diff-easy { background: rgba(52,211,153,0.15); color: var(--green); }
-    .source-tag { font-size: 11px; color: var(--text3); background: var(--bg3); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
     .card-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.5; }
     .toggle-icon { color: var(--text3); font-size: 16px; flex-shrink: 0; transition: transform .2s; margin-top: 2px; }
-    .card-answer {
-      display: none;
-      padding: 0 20px 18px;
-      border-top: 1px solid var(--border);
-    }
-    .card-answer.open { display: block; }
     .toggle-icon.open { transform: rotate(180deg); }
-    .answer-content { 
-      margin-top: 14px; font-size: 14px; line-height: 1.8; color: var(--text2);
-    }
+    .card-answer { display: none; padding: 0 20px 18px; border-top: 1px solid var(--border); }
+    .card-answer.open { display: block; }
+    .answer-content { margin-top: 14px; font-size: 14px; line-height: 1.8; color: var(--text2); }
     .answer-content h3 { color: var(--text); font-size: 14px; margin: 14px 0 6px; }
     .answer-content ul { padding-left: 20px; }
     .answer-content li { margin-bottom: 4px; }
     .answer-content code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 12px; color: var(--accent2); }
     .answer-content pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; margin: 10px 0; overflow-x: auto; font-size: 12px; }
     .questions-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-    .question-item { 
-      padding: 8px 12px; background: var(--bg3); border-radius: 6px;
-      font-size: 13px; color: var(--text2); border-left: 3px solid var(--accent);
-    }
+    .question-item { padding: 8px 12px; background: var(--bg3); border-radius: 6px; font-size: 13px; color: var(--text2); border-left: 3px solid var(--accent); }
+    .jd-sources { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 
     /* ── Tab2: Experiences ── */
-    .exp-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-    .filter-btn {
-      padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
-      background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer;
-      transition: all .2s;
-    }
+    .exp-filters, .proj-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); font-size: 12px; cursor: pointer; transition: all .2s; }
     .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
     .exp-card .card-body { padding: 16px 20px; }
-    .exp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .exp-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
     .exp-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.5; flex: 1; }
     .exp-title a { color: inherit; text-decoration: none; }
     .exp-title a:hover { color: var(--accent); text-decoration: underline; }
@@ -154,52 +137,40 @@
     .company-alibaba { background: rgba(251,191,36,0.15); color: var(--yellow); }
     .company-baidu { background: rgba(108,140,255,0.15); color: var(--accent); }
     .company-other { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
-    .platform-tag { font-size: 11px; color: var(--text3); background: var(--bg3); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); }
     .exp-summary { font-size: 13px; color: var(--text2); line-height: 1.7; }
-    .exp-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+    .exp-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; flex-wrap: wrap; gap: 6px; }
     .exp-time { font-size: 11px; color: var(--text3); }
     .quality-score { font-size: 11px; color: var(--green); background: rgba(52,211,153,0.1); padding: 2px 8px; border-radius: 4px; }
     .no-data { text-align: center; padding: 60px 0; color: var(--text3); font-size: 14px; }
     .no-data .icon { font-size: 40px; margin-bottom: 12px; }
 
-    /* ── Tab3: Knowledge ── */
-    .knowledge-nav { 
+    /* ── Tab3: Knowledge (Markdown) ── */
+    .md-body {
       background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 16px 20px; margin-bottom: 20px;
+      padding: 28px 32px; font-size: 14px; line-height: 1.85; color: var(--text2);
     }
-    .knowledge-nav h3 { font-size: 13px; color: var(--text3); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .5px; }
-    .toc-list { display: flex; flex-wrap: wrap; gap: 6px; }
-    .toc-link { 
-      font-size: 12px; padding: 4px 10px; border-radius: 4px;
-      background: var(--bg3); color: var(--text2); text-decoration: none; border: 1px solid var(--border);
-      transition: all .2s;
-    }
-    .toc-link:hover { color: var(--accent); border-color: var(--accent); }
-    .knowledge-section { margin-bottom: 28px; }
-    .knowledge-section h2 { 
-      font-size: 17px; font-weight: 700; color: var(--text); 
-      padding: 12px 16px; background: var(--bg2); border: 1px solid var(--border);
-      border-radius: var(--radius) var(--radius) 0 0; border-bottom: none;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .knowledge-section h3 {
-      font-size: 14px; font-weight: 600; color: var(--accent2);
-      padding: 10px 16px 6px; margin-top: 12px;
-    }
-    .knowledge-section .content-block {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 0 0 var(--radius) var(--radius);
-      padding: 16px 20px; font-size: 13px; line-height: 1.8; color: var(--text2);
-    }
-    .knowledge-section ul { padding-left: 20px; }
-    .knowledge-section li { margin-bottom: 4px; }
-    .knowledge-section code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 12px; color: var(--accent2); }
-    .concept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
-    .concept-item { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
-    .concept-item h4 { font-size: 13px; color: var(--accent); margin-bottom: 4px; }
-    .concept-item p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .md-body h1 { font-size: 24px; font-weight: 700; color: var(--text); margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .md-body h2 { font-size: 18px; font-weight: 700; color: var(--text); margin: 32px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+    .md-body h3 { font-size: 15px; font-weight: 600; color: var(--accent2); margin: 20px 0 8px; }
+    .md-body h4 { font-size: 13px; font-weight: 600; color: var(--text); margin: 14px 0 6px; }
+    .md-body p { margin-bottom: 10px; }
+    .md-body ul, .md-body ol { padding-left: 22px; margin-bottom: 12px; }
+    .md-body li { margin-bottom: 5px; }
+    .md-body code { background: var(--bg3); color: var(--accent2); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+    .md-body pre { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 12px 0; overflow-x: auto; }
+    .md-body pre code { background: none; padding: 0; color: var(--text2); font-size: 12px; }
+    .md-body blockquote { border-left: 3px solid var(--accent); padding: 8px 14px; margin: 12px 0; background: rgba(108,140,255,0.06); border-radius: 0 6px 6px 0; color: var(--text2); }
+    .md-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13px; }
+    .md-body th { background: var(--bg3); color: var(--text); padding: 8px 12px; text-align: left; border: 1px solid var(--border); }
+    .md-body td { padding: 7px 12px; border: 1px solid var(--border); color: var(--text2); }
+    .md-body tr:hover td { background: rgba(255,255,255,0.02); }
+    .md-body a { color: var(--accent); text-decoration: none; }
+    .md-body a:hover { text-decoration: underline; }
+    .md-body sup a { color: var(--accent2); font-size: 10px; background: rgba(167,139,250,0.12); padding: 1px 4px; border-radius: 3px; }
+    .md-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    .md-body strong { color: var(--text); font-weight: 600; }
 
     /* ── Tab4: Projects ── */
-    .proj-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
     .proj-card .card-body { padding: 16px 20px; }
     .proj-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
     .proj-title { font-size: 15px; font-weight: 600; }
@@ -207,50 +178,38 @@
     .proj-title a:hover { text-decoration: underline; }
     .proj-stars { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--yellow); font-weight: 600; flex-shrink: 0; }
     .proj-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; }
-    .proj-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .proj-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .lang-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
     .trend-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(52,211,153,0.1); color: var(--green); }
-    .proj-updated { font-size: 11px; color: var(--text3); margin-left: auto; }
     .category-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: rgba(167,139,250,0.15); color: var(--accent2); }
+    .proj-updated { font-size: 11px; color: var(--text3); margin-left: auto; }
 
-    /* ── Empty / Loading ── */
+    /* ── Loading ── */
     .loading { text-align: center; padding: 60px 0; color: var(--text3); }
     .loading .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Responsive ── */
     @media (max-width: 640px) {
       .header { padding: 0 16px; }
       .tabs { padding: 0 8px; }
       .tab-btn { padding: 12px 14px; font-size: 13px; }
       .content { padding: 16px 12px; }
+      .md-body { padding: 16px; }
     }
   </style>
 </head>
 <body>
 
 <header class="header">
-  <div class="header-logo">
-    <span>🤖</span> AI Agent 知识库
-  </div>
-  <div class="header-meta">
-    最后更新：<b id="last-update">加载中...</b>
-  </div>
+  <div class="header-logo"><span>🤖</span> AI Agent 知识库</div>
+  <div class="header-meta">最后更新：<b id="last-update">加载中...</b></div>
 </header>
 
 <nav class="tabs">
-  <button class="tab-btn active" onclick="switchTab(0)" id="tab0">
-    🎯 模拟面试 <span class="tab-badge" id="badge0">0</span>
-  </button>
-  <button class="tab-btn" onclick="switchTab(1)" id="tab1">
-    📝 真实面经 <span class="tab-badge" id="badge1">0</span>
-  </button>
-  <button class="tab-btn" onclick="switchTab(2)" id="tab2">
-    📚 知识总结
-  </button>
-  <button class="tab-btn" onclick="switchTab(3)" id="tab3">
-    🚀 开源项目 <span class="tab-badge" id="badge3">0</span>
-  </button>
+  <button class="tab-btn active" onclick="switchTab(0)">🎯 模拟面试 <span class="tab-badge" id="badge0">0</span></button>
+  <button class="tab-btn" onclick="switchTab(1)">📝 真实面经 <span class="tab-badge" id="badge1">0</span></button>
+  <button class="tab-btn" onclick="switchTab(2)">📚 知识总结</button>
+  <button class="tab-btn" onclick="switchTab(3)">🚀 开源项目 <span class="tab-badge" id="badge3">0</span></button>
 </nav>
 
 <main class="content">
@@ -264,9 +223,7 @@
       </div>
       <div class="update-badge">每日 <b>09:00</b> 更新</div>
     </div>
-    <div id="interviews-container">
-      <div class="loading"><div class="spinner"></div>加载中...</div>
-    </div>
+    <div id="interviews-container"><div class="loading"><div class="spinner"></div>加载中...</div></div>
   </div>
 
   <!-- ══ Tab2: 真实面经 ══ -->
@@ -276,36 +233,32 @@
         <div class="section-title">📝 真实面经</div>
         <div class="section-subtitle">来自牛客、脉脉、知乎 · 已过滤低质量内容 · 点击标题跳转原文</div>
       </div>
-      <div class="update-badge">每小时更新</div>
+      <div class="update-badge">工作日每小时更新</div>
     </div>
     <div class="exp-filters">
-      <button class="filter-btn active" onclick="filterExp('all', this)">全部</button>
-      <button class="filter-btn" onclick="filterExp('tencent', this)">腾讯</button>
-      <button class="filter-btn" onclick="filterExp('bytedance', this)">字节</button>
-      <button class="filter-btn" onclick="filterExp('alibaba', this)">阿里</button>
-      <button class="filter-btn" onclick="filterExp('baidu', this)">百度</button>
-      <button class="filter-btn" onclick="filterExp('other', this)">其他</button>
-      <button class="filter-btn" onclick="filterExp('nowcoder', this)">🐮 牛客</button>
-      <button class="filter-btn" onclick="filterExp('maimai', this)">💬 脉脉</button>
-      <button class="filter-btn" onclick="filterExp('zhihu', this)">🟢 知乎</button>
+      <button class="filter-btn active" onclick="filterExp('all',this)">全部</button>
+      <button class="filter-btn" onclick="filterExp('tencent',this)">腾讯</button>
+      <button class="filter-btn" onclick="filterExp('bytedance',this)">字节</button>
+      <button class="filter-btn" onclick="filterExp('alibaba',this)">阿里</button>
+      <button class="filter-btn" onclick="filterExp('baidu',this)">百度</button>
+      <button class="filter-btn" onclick="filterExp('other',this)">其他</button>
+      <button class="filter-btn" onclick="filterExp('nowcoder',this)">🐮 牛客</button>
+      <button class="filter-btn" onclick="filterExp('maimai',this)">💬 脉脉</button>
+      <button class="filter-btn" onclick="filterExp('zhihu',this)">🟢 知乎</button>
     </div>
-    <div id="experiences-container">
-      <div class="loading"><div class="spinner"></div>加载中...</div>
-    </div>
+    <div id="experiences-container"><div class="loading"><div class="spinner"></div>加载中...</div></div>
   </div>
 
-  <!-- ══ Tab3: 知识总结 ══ -->
+  <!-- ══ Tab3: 知识总结 (Markdown) ══ -->
   <div class="tab-panel" id="panel2">
     <div class="section-header">
       <div>
         <div class="section-title">📚 结构化知识总结</div>
-        <div class="section-subtitle">汇总面试题、面经、开源项目技术栈 · 每日更新</div>
+        <div class="section-subtitle">汇总面试题、面经、开源项目技术栈 · 含引用来源 · 每日更新</div>
       </div>
       <div class="update-badge">每日 <b>09:00</b> 更新</div>
     </div>
-    <div id="knowledge-container">
-      <div class="loading"><div class="spinner"></div>加载中...</div>
-    </div>
+    <div id="knowledge-container"><div class="loading"><div class="spinner"></div>加载中...</div></div>
   </div>
 
   <!-- ══ Tab4: 开源项目 ══ -->
@@ -313,26 +266,29 @@
     <div class="section-header">
       <div>
         <div class="section-title">🚀 流行开源项目</div>
-        <div class="section-subtitle">GitHub Trending + 关键词搜索 · 已过滤低质量项目 · 聚焦 AI Agent 方向</div>
+        <div class="section-subtitle">GitHub Trending + 关键词搜索 · 聚焦 AI Agent 方向 · 含来源链接</div>
       </div>
       <div class="update-badge">每日 <b>09:00</b> 更新</div>
     </div>
     <div class="proj-filters">
-      <button class="filter-btn active" onclick="filterProj('all', this)">全部</button>
-      <button class="filter-btn" onclick="filterProj('framework', this)">框架</button>
-      <button class="filter-btn" onclick="filterProj('tool', this)">工具</button>
-      <button class="filter-btn" onclick="filterProj('model', this)">模型</button>
-      <button class="filter-btn" onclick="filterProj('infra', this)">基础设施</button>
-      <button class="filter-btn" onclick="filterProj('trending', this)">🔥 今日趋势</button>
+      <button class="filter-btn active" onclick="filterProj('all',this)">全部</button>
+      <button class="filter-btn" onclick="filterProj('framework',this)">框架</button>
+      <button class="filter-btn" onclick="filterProj('tool',this)">工具</button>
+      <button class="filter-btn" onclick="filterProj('model',this)">模型</button>
+      <button class="filter-btn" onclick="filterProj('infra',this)">基础设施</button>
+      <button class="filter-btn" onclick="filterProj('trending',this)">🔥 今日趋势</button>
     </div>
-    <div id="projects-container">
-      <div class="loading"><div class="spinner"></div>加载中...</div>
-    </div>
+    <div id="projects-container"><div class="loading"><div class="spinner"></div>加载中...</div></div>
   </div>
 
 </main>
 
 <script>
+// ── Marked config ──
+if (typeof marked !== 'undefined') {
+  marked.setOptions({ breaks: true, gfm: true });
+}
+
 // ── Tab switching ──
 function switchTab(i) {
   document.querySelectorAll('.tab-panel').forEach((p,idx) => p.classList.toggle('active', idx===i));
@@ -341,29 +297,58 @@ function switchTab(i) {
 
 // ── Data loading ──
 const BASE = 'https://raw.githubusercontent.com/wenzyding/agent-knowledge/main/data/';
-
 async function loadJSON(file) {
   const r = await fetch(BASE + file + '?t=' + Date.now());
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
 
+// ── Source pill helper ──
+function sourcePill(label, url, icon) {
+  icon = icon || '🔗';
+  if (url) {
+    return `<a class="source-pill" href="${url}" target="_blank" rel="noopener">${icon} ${label}</a>`;
+  }
+  return `<span class="source-pill">${icon} ${label}</span>`;
+}
+
+// ── JD source URLs for companies ──
+const JD_URLS = {
+  '腾讯': 'https://careers.tencent.com/jobopportunity.html#!?keywords=Agent',
+  '字节跳动': 'https://jobs.bytedance.com/experienced/position?keywords=Agent',
+  '阿里巴巴': 'https://talent.alibaba.com/off-campus/position-list?keywords=Agent',
+  '百度': 'https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent',
+  '美团': 'https://zhaopin.meituan.com/?keywords=Agent',
+  '快手': 'https://zhaopin.kuaishou.com/official/#/recruit/list?keywords=Agent',
+};
+
+function getJdUrl(source) {
+  for (const [company, url] of Object.entries(JD_URLS)) {
+    if (source && source.includes(company)) return url;
+  }
+  // fallback: BOSS直聘搜索
+  if (source) return `https://www.zhipin.com/web/geek/job?query=${encodeURIComponent('AI Agent ' + source)}`;
+  return 'https://www.zhipin.com/web/geek/job?query=AI+Agent';
+}
+
 // ── Render Tab1: Interviews ──
 function renderInterviews(data) {
   const c = document.getElementById('interviews-container');
-  if (!data || !data.items || data.items.length === 0) {
-    c.innerHTML = '<div class="no-data"><div class="icon">📭</div>暂无数据，等待今日更新...</div>';
+  if (!data || !data.items || !data.items.length) {
+    c.innerHTML = '<div class="no-data"><div class="icon">📭</div>等待今日更新...</div>';
     return;
   }
   document.getElementById('badge0').textContent = data.items.length;
-  c.innerHTML = data.items.map((item, i) => `
+  c.innerHTML = data.items.map((item, i) => {
+    const sourceUrl = getJdUrl(item.source);
+    return `
     <div class="card interview-card">
       <div class="card-header" onclick="toggleAnswer(${i})">
         <div style="flex:1">
           <div class="interview-meta">
-            <span class="date-tag ${item.date === today() ? 'today-tag' : ''}">${item.date}${item.date === today() ? ' · 今日' : ''}</span>
+            <span class="date-tag ${item.date === today() ? 'today-tag' : ''}">${item.date}${item.date===today()?' · 今日':''}</span>
             <span class="difficulty-tag diff-${item.difficulty}">${{hard:'困难',medium:'中等',easy:'简单'}[item.difficulty]||item.difficulty}</span>
-            ${item.source ? `<span class="source-tag">来源：${item.source}</span>` : ''}
+            ${item.source ? `<a class="source-pill" href="${sourceUrl}" target="_blank" rel="noopener">🏢 ${item.source}</a>` : ''}
           </div>
           <div class="card-title">${item.title}</div>
         </div>
@@ -376,26 +361,34 @@ function renderInterviews(data) {
             <div class="questions-list">${item.questions.map(q=>`<div class="question-item">▸ ${q}</div>`).join('')}</div>
           ` : ''}
           <h3>💡 参考答案</h3>
-          <div>${item.answer || '答案加载中...'}</div>
+          <div>${item.answer || ''}</div>
           ${item.tips ? `<h3>🎯 面试技巧</h3><div>${item.tips}</div>` : ''}
+          ${item.refs && item.refs.length ? `
+            <div class="refs-section">
+              <h4>📎 参考来源</h4>
+              <div class="refs-list">${item.refs.map((r,ri)=>`
+                <div class="ref-item">
+                  <span class="ref-num">[${ri+1}]</span>
+                  <span>${r.title}${r.url?` — <a href="${r.url}" target="_blank">${r.url}</a>`:''}</span>
+                </div>`).join('')}
+              </div>
+            </div>` : ''}
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`
+  }).join('');
 }
 
 function toggleAnswer(i) {
-  const ans = document.getElementById(`answer-${i}`);
-  const icon = document.getElementById(`icon-${i}`);
-  ans.classList.toggle('open');
-  icon.classList.toggle('open');
+  document.getElementById(`answer-${i}`).classList.toggle('open');
+  document.getElementById(`icon-${i}`).classList.toggle('open');
 }
 
 // ── Render Tab2: Experiences ──
 let allExps = [];
 function renderExperiences(data) {
   const c = document.getElementById('experiences-container');
-  if (!data || !data.items || data.items.length === 0) {
+  if (!data || !data.items || !data.items.length) {
     c.innerHTML = '<div class="no-data"><div class="icon">📭</div>暂无面经，等待下次采集...</div>';
     return;
   }
@@ -404,88 +397,82 @@ function renderExperiences(data) {
   renderExpList(allExps);
 }
 
+const COMPANY_LABEL = {tencent:'腾讯',bytedance:'字节跳动',alibaba:'阿里巴巴',baidu:'百度',meituan:'美团',kuaishou:'快手'};
+const COMPANY_CLASS = {tencent:'company-tencent',bytedance:'company-bytedance',alibaba:'company-alibaba',baidu:'company-baidu'};
+const PLATFORM_LABEL = {nowcoder:'🐮 牛客',maimai:'💬 脉脉',zhihu:'🟢 知乎'};
+
 function renderExpList(items) {
   const c = document.getElementById('experiences-container');
   if (!items.length) { c.innerHTML = '<div class="no-data"><div class="icon">🔍</div>该条件下暂无面经</div>'; return; }
-  const companyClass = {tencent:'company-tencent',bytedance:'company-bytedance',alibaba:'company-alibaba',baidu:'company-baidu'};
-  const companyLabel = {tencent:'腾讯',bytedance:'字节跳动',alibaba:'阿里巴巴',baidu:'百度'};
   c.innerHTML = items.map(item => `
     <div class="card exp-card">
       <div class="card-body">
         <div class="exp-header">
           <div class="exp-title">
-            ${item.url ? `<a href="${item.url}" target="_blank">${item.title}</a>` : item.title}
+            ${item.url ? `<a href="${item.url}" target="_blank" rel="noopener">${item.title}</a>` : item.title}
           </div>
         </div>
         <div class="exp-tags">
-          ${item.company ? `<span class="company-tag ${companyClass[item.company]||'company-other'}">${companyLabel[item.company]||item.company}</span>` : ''}
-          <span class="platform-tag">${{nowcoder:'🐮 牛客',maimai:'💬 脉脉',zhihu:'🟢 知乎'}[item.platform]||item.platform}</span>
-          ${item.position ? `<span class="source-tag">${item.position}</span>` : ''}
+          ${item.company ? `<span class="company-tag ${COMPANY_CLASS[item.company]||'company-other'}">${COMPANY_LABEL[item.company]||item.company}</span>` : ''}
+          ${item.platform ? `<a class="source-pill platform" href="${platformUrl(item.platform, item.url)}" target="_blank" rel="noopener">${PLATFORM_LABEL[item.platform]||item.platform}</a>` : ''}
+          ${item.position ? `<span class="source-pill">${item.position}</span>` : ''}
         </div>
-        <div class="exp-summary">${item.summary || item.content || ''}</div>
+        <div class="exp-summary">${item.summary || ''}</div>
         <div class="exp-footer">
           <span class="exp-time">${item.created_at || ''}</span>
           ${item.quality ? `<span class="quality-score">质量 ${item.quality}/10</span>` : ''}
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`
+  ).join('');
+}
+
+function platformUrl(platform, fallback) {
+  if (fallback) return fallback;
+  const urls = {
+    nowcoder: 'https://www.nowcoder.com/discuss?type=3',
+    maimai: 'https://maimai.cn',
+    zhihu: 'https://www.zhihu.com/search?q=AI+Agent+面经&type=content'
+  };
+  return urls[platform] || '#';
 }
 
 function filterExp(key, btn) {
   document.querySelectorAll('.exp-filters .filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   if (key === 'all') { renderExpList(allExps); return; }
-  const filtered = allExps.filter(e => e.company === key || e.platform === key);
-  renderExpList(filtered);
+  renderExpList(allExps.filter(e => e.company === key || e.platform === key));
 }
 
-// ── Render Tab3: Knowledge ──
+// ── Render Tab3: Knowledge (Markdown) ──
 function renderKnowledge(data) {
   const c = document.getElementById('knowledge-container');
-  if (!data || !data.sections || data.sections.length === 0) {
+  if (!data || !data.markdown) {
     c.innerHTML = '<div class="no-data"><div class="icon">📭</div>知识总结生成中...</div>';
     return;
   }
-  const tocLinks = data.sections.map(s => `<a class="toc-link" href="#sec-${s.id}">${s.icon||''} ${s.title}</a>`).join('');
-  const sections = data.sections.map(s => `
-    <div class="knowledge-section" id="sec-${s.id}">
-      <h2>${s.icon||'📌'} ${s.title}</h2>
-      <div class="content-block">${renderKnowledgeContent(s)}</div>
-    </div>
-  `).join('');
-  c.innerHTML = `
-    <div class="knowledge-nav">
-      <h3>📑 目录</h3>
-      <div class="toc-list">${tocLinks}</div>
-    </div>
-    ${sections}
-  `;
-}
-
-function renderKnowledgeContent(s) {
-  if (s.type === 'concepts' && s.concepts) {
-    return `<div class="concept-grid">${s.concepts.map(c=>`
-      <div class="concept-item"><h4>${c.name}</h4><p>${c.desc}</p></div>
-    `).join('')}</div>`;
+  const html = typeof marked !== 'undefined' ? marked.parse(data.markdown) : data.markdown.replace(/\n/g,'<br>');
+  c.innerHTML = `<div class="md-body">${html}</div>`;
+  // 脚注区块
+  if (data.refs && data.refs.length) {
+    c.innerHTML += `
+      <div class="refs-section" style="margin-top:20px">
+        <h4>📎 参考来源</h4>
+        <div class="refs-list">${data.refs.map((r,i)=>`
+          <div class="ref-item">
+            <span class="ref-num">[${i+1}]</span>
+            <span>${r.title}${r.url ? ` — <a href="${r.url}" target="_blank">${r.url}</a>`:''}</span>
+          </div>`).join('')}
+        </div>
+      </div>`;
   }
-  if (s.type === 'list' && s.items) {
-    return `<ul>${s.items.map(i=>`<li>${i}</li>`).join('')}</ul>`;
-  }
-  if (s.type === 'subsections' && s.subsections) {
-    return s.subsections.map(sub=>`
-      <h3>${sub.title}</h3>
-      <ul>${(sub.items||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
-    `).join('');
-  }
-  return s.content || '';
 }
 
 // ── Render Tab4: Projects ──
 let allProjects = [];
 function renderProjects(data) {
   const c = document.getElementById('projects-container');
-  if (!data || !data.items || data.items.length === 0) {
+  if (!data || !data.items || !data.items.length) {
     c.innerHTML = '<div class="no-data"><div class="icon">📭</div>开源项目数据更新中...</div>';
     return;
   }
@@ -501,9 +488,7 @@ function renderProjectList(items) {
     <div class="card proj-card">
       <div class="card-body">
         <div class="proj-header">
-          <div class="proj-title">
-            <a href="${item.url}" target="_blank">${item.name}</a>
-          </div>
+          <div class="proj-title"><a href="${item.url}" target="_blank" rel="noopener">${item.name}</a></div>
           <div class="proj-stars">⭐ ${fmtNum(item.stars)}</div>
         </div>
         <div class="proj-desc">${item.description || ''}</div>
@@ -512,11 +497,12 @@ function renderProjectList(items) {
           ${item.category ? `<span class="category-tag">${item.category}</span>` : ''}
           ${item.trending ? `<span class="trend-tag">🔥 今日趋势</span>` : ''}
           ${item.today_stars ? `<span class="trend-tag">+${item.today_stars} 今日</span>` : ''}
+          ${item.source_label ? `<a class="source-pill" href="${item.source_url||item.url}" target="_blank">📡 ${item.source_label}</a>` : ''}
           <span class="proj-updated">${item.updated_at || ''}</span>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`
+  ).join('');
 }
 
 function filterProj(key, btn) {
@@ -531,7 +517,7 @@ function filterProj(key, btn) {
 function today() { return new Date().toISOString().slice(0,10); }
 function fmtNum(n) {
   if (!n) return '0';
-  if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+  if (n >= 1000) return (n/1000).toFixed(1)+'k';
   return String(n);
 }
 
@@ -540,7 +526,7 @@ async function init() {
   try {
     const meta = await loadJSON('meta.json');
     document.getElementById('last-update').textContent = meta.updated_at || '未知';
-  } catch(e) { document.getElementById('last-update').textContent = '数据初始化中'; }
+  } catch(e) { document.getElementById('last-update').textContent = '初始化中'; }
 
   Promise.allSettled([
     loadJSON('interviews.json').then(renderInterviews).catch(()=>renderInterviews(null)),
@@ -549,7 +535,6 @@ async function init() {
     loadJSON('projects.json').then(renderProjects).catch(()=>renderProjects(null)),
   ]);
 }
-
 init();
 </script>
 </body>

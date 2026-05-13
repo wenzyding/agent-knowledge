@@ -5,11 +5,13 @@
       "name": "NousResearch/hermes-agent",
       "url": "https://github.com/NousResearch/hermes-agent",
       "description": "The agent that grows with you",
-      "stars": 147935,
+      "stars": 147958,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:57.187913",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768584",
       "updated_at": "2026-05-13"
     },
     {
@@ -17,11 +19,13 @@
       "name": "langchain-ai/langchain",
       "url": "https://github.com/langchain-ai/langchain",
       "description": "The agent engineering platform.",
-      "stars": 136624,
+      "stars": 136626,
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:57.187937",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768612",
       "updated_at": "2026-05-13"
     },
     {
@@ -33,7 +37,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:57.187949",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768623",
       "updated_at": "2026-05-09"
     },
     {
@@ -41,11 +47,13 @@
       "name": "browser-use/browser-use",
       "url": "https://github.com/browser-use/browser-use",
       "description": "🌐 Make websites accessible for AI agents. Automate tasks online with ease.",
-      "stars": 93704,
+      "stars": 93707,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:57.187980",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768638",
       "updated_at": "2026-05-11"
     },
     {
@@ -53,11 +61,13 @@
       "name": "infiniflow/ragflow",
       "url": "https://github.com/infiniflow/ragflow",
       "description": "RAGFlow is a leading open-source Retrieval-Augmented Generation (RAG) engine that fuses cutting-edge RAG with Agent capabilities to create a superior context layer for LLMs",
-      "stars": 80417,
+      "stars": 80420,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400915",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511156",
       "updated_at": "2026-05-13"
     },
     {
@@ -65,11 +75,13 @@
       "name": "TauricResearch/TradingAgents",
       "url": "https://github.com/TauricResearch/TradingAgents",
       "description": "TradingAgents: Multi-Agents LLM Financial Trading Framework",
-      "stars": 74709,
+      "stars": 74715,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999262",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.131995",
       "updated_at": "2026-05-11"
     },
     {
@@ -77,11 +89,13 @@
       "name": "OpenHands/OpenHands",
       "url": "https://github.com/OpenHands/OpenHands",
       "description": "🙌 OpenHands: AI-Driven Development",
-      "stars": 73362,
+      "stars": 73366,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:57.188007",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768662",
       "updated_at": "2026-05-13"
     },
     {
@@ -89,11 +103,13 @@
       "name": "hiyouga/LlamaFactory",
       "url": "https://github.com/hiyouga/LlamaFactory",
       "description": "Unified Efficient Fine-Tuning of 100+ LLMs & VLMs (ACL 2024)",
-      "stars": 71208,
+      "stars": 71210,
       "trending": false,
       "language": "Python",
       "category": "model",
-      "fetched_at": "2026-05-13T20:06:57.188013",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768668",
       "updated_at": "2026-05-12"
     },
     {
@@ -105,7 +121,9 @@
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:58.999290",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132030",
       "updated_at": "2026-01-21"
     },
     {
@@ -113,11 +131,13 @@
       "name": "bytedance/deer-flow",
       "url": "https://github.com/bytedance/deer-flow",
       "description": "An open-source long-horizon SuperAgent harness that researches, codes, and creates. With the help of sandboxes, memories, tools, skill, subagents and message gateway, it handles different levels of ta",
-      "stars": 67287,
+      "stars": 67291,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:57.188029",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=LLM%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:31.768684",
       "updated_at": "2026-05-13"
     },
     {
@@ -129,7 +149,9 @@
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:55.805049",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.442997",
       "updated_at": "2026-04-15"
     },
     {
@@ -141,7 +163,9 @@
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:55.805054",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443004",
       "updated_at": "2026-05-13"
     },
     {
@@ -153,7 +177,9 @@
       "trending": false,
       "language": "Python",
       "category": "model",
-      "fetched_at": "2026-05-13T20:06:58.999298",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132042",
       "updated_at": "2026-05-11"
     },
     {
@@ -165,7 +191,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400945",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511187",
       "updated_at": "2026-05-13"
     },
     {
@@ -177,7 +205,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999305",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132053",
       "updated_at": "2026-05-12"
     },
     {
@@ -189,7 +219,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400951",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511194",
       "updated_at": "2026-05-12"
     },
     {
@@ -197,11 +229,13 @@
       "name": "AstrBotDevs/AstrBot",
       "url": "https://github.com/AstrBotDevs/AstrBot",
       "description": "AI Agent Assistant & development framework that integrates lots of IM platforms, LLMs, plugins and AI feature, and can be your openclaw alternative. ✨",
-      "stars": 32061,
+      "stars": 32062,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:55.805080",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443024",
       "updated_at": "2026-05-13"
     },
     {
@@ -209,11 +243,13 @@
       "name": "langchain-ai/langgraph",
       "url": "https://github.com/langchain-ai/langgraph",
       "description": "Build resilient agents.",
-      "stars": 31944,
+      "stars": 31946,
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:55.805085",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443031",
       "updated_at": "2026-05-13"
     },
     {
@@ -225,7 +261,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999312",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132064",
       "updated_at": "2026-05-13"
     },
     {
@@ -233,11 +271,13 @@
       "name": "zai-org/Open-AutoGLM",
       "url": "https://github.com/zai-org/Open-AutoGLM",
       "description": "An Open Phone Agent Model & Framework. Unlocking the AI Phone for Everyone",
-      "stars": 25267,
+      "stars": 25268,
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:55.805106",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443060",
       "updated_at": "2026-03-06"
     },
     {
@@ -249,7 +289,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999320",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132076",
       "updated_at": "2026-04-15"
     },
     {
@@ -257,11 +299,13 @@
       "name": "camel-ai/owl",
       "url": "https://github.com/camel-ai/owl",
       "description": "🦉 OWL: Optimized Workforce Learning for General Multi-Agent Assistance in Real-World Task Automation",
-      "stars": 19773,
+      "stars": 19774,
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:58.999326",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132086",
       "updated_at": "2026-05-01"
     },
     {
@@ -273,7 +317,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999332",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132095",
       "updated_at": "2026-05-13"
     },
     {
@@ -285,7 +331,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:55.805114",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443071",
       "updated_at": "2026-05-13"
     },
     {
@@ -297,7 +345,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:55.805121",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=AI%20agent%20framework&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:30.443079",
       "updated_at": "2026-05-13"
     },
     {
@@ -309,7 +359,9 @@
       "trending": false,
       "language": "Python",
       "category": "framework",
-      "fetched_at": "2026-05-13T20:06:58.999337",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132104",
       "updated_at": "2026-05-12"
     },
     {
@@ -321,7 +373,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:06:58.999343",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=multi%20agent&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:33.132112",
       "updated_at": "2026-02-11"
     },
     {
@@ -333,7 +387,9 @@
       "trending": false,
       "language": "Jupyter Notebook",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871393",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697381",
       "updated_at": "2026-05-13"
     },
     {
@@ -345,7 +401,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871422",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697411",
       "updated_at": "2025-11-24"
     },
     {
@@ -357,7 +415,9 @@
       "trending": false,
       "language": "TypeScript",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871430",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697420",
       "updated_at": "2026-01-06"
     },
     {
@@ -369,7 +429,9 @@
       "trending": false,
       "language": "C#",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871438",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697430",
       "updated_at": "2026-05-05"
     },
     {
@@ -381,7 +443,9 @@
       "trending": false,
       "language": "Go",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871443",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697437",
       "updated_at": "2026-05-13"
     },
     {
@@ -393,7 +457,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871448",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697443",
       "updated_at": "2026-01-25"
     },
     {
@@ -405,7 +471,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400959",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511202",
       "updated_at": "2025-11-07"
     },
     {
@@ -417,7 +485,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400964",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511208",
       "updated_at": "2026-05-11"
     },
     {
@@ -429,7 +499,9 @@
       "trending": false,
       "language": "Go",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871452",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697449",
       "updated_at": "2026-05-12"
     },
     {
@@ -441,7 +513,9 @@
       "trending": false,
       "language": "",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871456",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697455",
       "updated_at": "2026-05-06"
     },
     {
@@ -453,7 +527,9 @@
       "trending": false,
       "language": "TypeScript",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871461",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697461",
       "updated_at": "2026-05-12"
     },
     {
@@ -465,7 +541,9 @@
       "trending": false,
       "language": "TypeScript",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:01.871471",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=model%20context%20protocol%20MCP&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:36.697474",
       "updated_at": "2025-12-13"
     },
     {
@@ -477,7 +555,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400970",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511215",
       "updated_at": "2026-05-13"
     },
     {
@@ -489,7 +569,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400975",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511220",
       "updated_at": "2026-03-13"
     },
     {
@@ -501,7 +583,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400980",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511226",
       "updated_at": "2026-01-21"
     },
     {
@@ -513,7 +597,9 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400984",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511231",
       "updated_at": "2026-02-26"
     },
     {
@@ -525,10 +611,12 @@
       "trending": false,
       "language": "Python",
       "category": "tool",
-      "fetched_at": "2026-05-13T20:07:00.400994",
+      "source_label": "GitHub Search",
+      "source_url": "https://github.com/search?q=RAG%20retrieval%20augmented&type=repositories&s=stars",
+      "fetched_at": "2026-05-13T20:25:34.511242",
       "updated_at": "2026-05-12"
     }
   ],
-  "updated_at": "2026-05-13T20:07:01.871527",
+  "updated_at": "2026-05-13T20:25:36.697537",
   "total": 44
 }
