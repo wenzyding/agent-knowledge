@@ -263,7 +263,27 @@ def fetch_maimai():
     return items
 
 def main():
-    print(f'[exp] 开始采集 {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}...')
+    import sys
+    # mode: full=全量历史（首次/每周日）, incremental=增量（日常）
+    mode = sys.argv[1] if len(sys.argv) > 1 else 'incremental'
+    
+    print(f'[exp] 开始采集 {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")} mode={mode}...')
+    
+    if mode == 'full':
+        # 全量模式：搜索过去180天
+        subprocess.run(
+            ['python3', NOWCODER_CLI, 'update-config',
+             '--json-input', '{"time_window_days": 180, "max_pages": 10, "max_results_per_keyword": 50}'],
+            capture_output=True
+        )
+    else:
+        # 增量模式：只看最近3天，速度快
+        subprocess.run(
+            ['python3', NOWCODER_CLI, 'update-config',
+             '--json-input', '{"time_window_days": 3, "max_pages": 3, "max_results_per_keyword": 20}'],
+            capture_output=True
+        )
+    
     existing = load_existing()
     existing_ids = {item['id'] for item in existing.get('items', [])}
 
