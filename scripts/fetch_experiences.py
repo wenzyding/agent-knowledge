@@ -1,231 +1,281 @@
 #!/usr/bin/env python3
 """
-Tab2: 真实面经采集脚本
-- 从牛客、脉脉检索 AI Agent 相关面经
-- 质量过滤（去掉太短、内容空洞的）
-- 输出到 data/experiences.json
+Tab2: 面经采集脚本
+数据源（按优先级，均无需 Cookie）：
+  1. 牛客网讨论区爬取（主力，AI Agent/大模型面经）
+  2. GitHub 面试题仓库搜索（补充结构化内容）
+  3. 脉脉（有登录态时额外补充，失败静默跳过）
 """
-import json
-import os
-import sys
-import subprocess
-import datetime
-import re
-import hashlib
+import json, os, subprocess, datetime, hashlib, re, urllib.request, urllib.parse
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), '../data/experiences.json')
-MAX_ITEMS = 100  # 最多保留100条
-
 SKILLS_DIR = os.path.expanduser('~/.openclaw/workspace/skills')
-NOWCODER_CLI = os.path.join(SKILLS_DIR, 'follow-nowcoder/scripts/cli.py')
+GITHUB_SEARCH = os.path.join(SKILLS_DIR, 'github-search/scripts/github-search.mjs')
+MAIMAI_BIN = '/root/.local/bin/maimai'
+MAX_ITEMS = 100
 
-COMPANY_KEYWORDS = {
-    'tencent': ['腾讯', 'tencent', 'tx', 'pcg', 'csig', 'ieg', 'wechat'],
-    'bytedance': ['字节', 'bytedance', '抖音', 'tiktok', 'douyin'],
-    'alibaba': ['阿里', 'alibaba', '淘宝', '天猫', '蚂蚁', '钉钉'],
-    'baidu': ['百度', 'baidu'],
-    'meituan': ['美团', 'meituan'],
-    'kuaishou': ['快手', 'kuaishou'],
+# ── 关键词过滤 ──
+AGENT_KEYWORDS = [
+    'ai agent', 'llm', 'agent', '大模型', '多模态', 'rag', '向量',
+    '人工智能', '机器学习', 'nlp', '自然语言', 'transformer',
+    'gpt', 'claude', 'gemini', '推理', '微调', 'fine-tun',
+    '算法工程师', '实习', '面经', '面试', '腾讯', '字节', '阿里',
+]
+
+COMPANY_MAP = {
+    '腾讯': 'tencent', 'tencent': 'tencent', 'wechat': 'tencent',
+    '字节': 'bytedance', 'bytedance': 'bytedance', 'tiktok': 'bytedance', '抖音': 'bytedance', '豆包': 'bytedance',
+    '阿里': 'alibaba', 'alibaba': 'alibaba', '淘宝': 'alibaba', '蚂蚁': 'alibaba',
+    '百度': 'baidu', 'baidu': 'baidu', '文心': 'baidu',
+    '美团': 'meituan', '快手': 'kuaishou', '小米': 'xiaomi',
+    '华为': 'huawei', '京东': 'jd', '滴滴': 'didi', '网易': 'netease',
 }
 
 def detect_company(text):
-    text_lower = text.lower()
-    for company, keywords in COMPANY_KEYWORDS.items():
-        if any(kw in text_lower for kw in keywords):
-            return company
+    t = text.lower()
+    for kw, c in COMPANY_MAP.items():
+        if kw.lower() in t:
+            return c
     return 'other'
 
+def detect_position(text):
+    t = text.lower()
+    if any(k in t for k in ['大模型', 'llm', 'agent', 'nlp', 'nlg']): return 'LLM/Agent 工程师'
+    if any(k in t for k in ['算法', 'algorithm', 'research', '研究员']): return 'AI 算法工程师'
+    if any(k in t for k in ['推荐', '搜索', 'rank']): return '推荐/搜索工程师'
+    if any(k in t for k in ['实习', 'intern']): return '实习生'
+    return 'AI/技术岗'
+
+def is_relevant(title, summary=''):
+    text = (title + ' ' + summary).lower()
+    return any(kw in text for kw in AGENT_KEYWORDS)
+
 def quality_score(item):
-    """评估面经质量，返回 1-10 分"""
-    text = (item.get('title','') + item.get('summary','') + item.get('content','')).strip()
-    score = 5
-    # 长度加分
-    if len(text) > 200: score += 1
-    if len(text) > 500: score += 1
-    if len(text) > 1000: score += 1
-    # 关键词加分
-    tech_keywords = ['agent', 'llm', 'rag', 'prompt', '模型', '推理', '向量', '工具调用', 'function call', 'embedding']
-    hits = sum(1 for kw in tech_keywords if kw.lower() in text.lower())
-    score += min(hits, 2)
-    # 长度不足扣分
-    if len(text) < 50: score -= 3
-    return max(1, min(10, score))
+    score = 4
+    if len(item.get('summary', '')) > 80: score += 1
+    if len(item.get('summary', '')) > 200: score += 1
+    if item.get('url'): score += 1
+    if item.get('company') != 'other': score += 1
+    if item.get('platform') == 'nowcoder': score += 1
+    return min(score, 10)
 
+def load_existing():
+    try:
+        with open(DATA_FILE) as f: return json.load(f)
+    except: return {"items": [], "updated_at": ""}
+
+def dedup(items):
+    seen, out = set(), []
+    for item in items:
+        key = item.get('id') or hashlib.md5(item.get('title', '').encode()).hexdigest()
+        if key not in seen:
+            seen.add(key)
+            out.append(item)
+    return out
+
+def http_get(url, headers=None, timeout=10):
+    """简单 HTTP GET"""
+    default_headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
+    }
+    if headers:
+        default_headers.update(headers)
+    req = urllib.request.Request(url, headers=default_headers)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read().decode('utf-8', errors='replace')
+
+# ─────────────────────────────────────────────
+# 牛客网（主力，无需 Cookie）
+# ─────────────────────────────────────────────
 def fetch_nowcoder():
-    """从牛客获取 AI Agent 相关面经"""
-    items = []
+    """用 follow-nowcoder skill 的 search-posts 命令获取牛客面经"""
+    NOWCODER_CLI = os.path.join(SKILLS_DIR, 'follow-nowcoder/scripts/cli.py')
     if not os.path.exists(NOWCODER_CLI):
-        print("[experiences] 牛客 CLI 未找到，跳过")
-        return items
+        print('[exp] 牛客 CLI 未找到，跳过')
+        return []
     
-    try:
-        # 初始化配置
-        config = {
-            "search_keywords": ["AI Agent", "LLM Agent", "大模型", "Agent工程师"],
-            "time_window_days": 7,
-            "max_pages": 2,
-            "tag": 818,  # 面经标签
-            "order": "create",
-            "language": "zh",
-            "max_results_per_keyword": 8,
-            "request_delay": 2,
-            "onboarding_complete": True,
-            "user_preferences": {
-                "report_style": "detailed",
-                "focus_areas": ["面试问题", "技术栈", "Agent"],
-                "company_filter": [],
-                "min_view_count": 0
-            }
-        }
-        
-        subprocess.run(
-            ['python3', NOWCODER_CLI, 'init-config', '--json-input', json.dumps(config)],
-            capture_output=True, text=True, timeout=10
-        )
-        
-        # 搜索帖子
-        result = subprocess.run(
-            ['python3', NOWCODER_CLI, 'search-posts'],
-            capture_output=True, text=True, timeout=30
-        )
-        
-        if result.returncode == 0 and result.stdout:
-            data = json.loads(result.stdout)
-            posts = data.get('data', {}).get('posts', []) if isinstance(data.get('data'), dict) else data.get('data', [])
-            
-            for post in posts[:20]:
-                title = post.get('title') or post.get('text', '')[:80]
-                content = post.get('text') or post.get('content', '')
-                url = post.get('url') or f"https://www.nowcoder.com/discuss/{post.get('id','')}"
-                
-                item = {
-                    'id': hashlib.md5(url.encode()).hexdigest()[:12],
-                    'title': title[:100],
-                    'summary': content[:300] if content else '',
-                    'url': url,
-                    'platform': 'nowcoder',
-                    'company': detect_company(title + content),
-                    'position': 'AI Agent / LLM',
-                    'created_at': post.get('time') or post.get('created_at', ''),
-                    'fetched_at': datetime.datetime.now().isoformat(),
-                }
-                item['quality'] = quality_score(item)
-                if item['quality'] >= 4:  # 过滤低质量
-                    items.append(item)
-        
-        print(f"[experiences] 牛客获取 {len(items)} 条")
-    except Exception as e:
-        print(f"[experiences] 牛客采集失败: {e}")
-    
-    return items
-
-def fetch_maimai():
-    """从脉脉获取 AI Agent 相关面经"""
     items = []
-    maimai_bin = '/root/.local/bin/maimai'
+    queries = ['AI Agent', '大模型 面经', 'LLM 工程师', 'RAG 向量数据库']
     
-    if not os.path.exists(maimai_bin):
-        print("[experiences] 脉脉 CLI 未找到，跳过")
-        return items
-    
-    try:
-        env = os.environ.copy()
-        env['PATH'] = '/root/.local/bin:' + env.get('PATH', '')
-        
-        # 搜索 AI Agent 相关讨论
-        for keyword in ['AI Agent', 'LLM工程师', '大模型']:
+    for query in queries:
+        try:
             result = subprocess.run(
-                [maimai_bin, 'search', keyword, '--section', 'gossips', '--limit', '10', '--json'],
-                capture_output=True, text=True, timeout=20, env=env
+                ['python3', NOWCODER_CLI, 'search-posts', query],
+                capture_output=True, text=True, timeout=20
             )
-            
             if result.returncode == 0 and result.stdout:
-                try:
-                    data = yaml_or_json_load(result.stdout)
-                    posts = data.get('data', []) if isinstance(data, dict) else []
-                    
-                    for post in posts:
-                        title = post.get('title') or post.get('text', '')[:80]
-                        content = post.get('text') or ''
-                        
-                        # 过滤：只要提到面试/招聘/技术的
-                        if not any(kw in (title+content) for kw in ['面试', '招聘', '技术', 'Agent', 'LLM', '大模型']):
-                            continue
-                        
-                        item = {
-                            'id': hashlib.md5((title+content[:50]).encode()).hexdigest()[:12],
-                            'title': title[:100],
-                            'summary': content[:300],
-                            'url': post.get('url', ''),
-                            'platform': 'maimai',
-                            'company': detect_company(title + content),
-                            'position': keyword,
-                            'created_at': post.get('time', ''),
-                            'fetched_at': datetime.datetime.now().isoformat(),
-                        }
-                        item['quality'] = quality_score(item)
-                        if item['quality'] >= 4:
-                            items.append(item)
-                except:
-                    pass
-        
-        print(f"[experiences] 脉脉获取 {len(items)} 条")
-    except Exception as e:
-        print(f"[experiences] 脉脉采集失败: {e}")
+                data = json.loads(result.stdout)
+                records = data.get('results', {}).get(query, {}).get('records', [])
+                for rec in records:
+                    title = rec.get('title', '')
+                    if not title or not is_relevant(title):
+                        continue
+                    uuid = rec.get('uuid', '')
+                    content_id = rec.get('content_id', '')
+                    if uuid:
+                        url = f'https://www.nowcoder.com/discuss/{uuid}'
+                    elif content_id:
+                        url = f'https://www.nowcoder.com/feed/main/detail/{content_id}'
+                    else:
+                        url = ''
+                    ts = rec.get('created_at', 0)
+                    created = datetime.datetime.fromtimestamp(ts/1000).strftime('%Y-%m-%d') if ts else datetime.datetime.now().strftime('%Y-%m-%d')
+                    item = {
+                        'id': hashlib.md5((title + uuid + content_id).encode()).hexdigest()[:12],
+                        'title': title,
+                        'url': url,
+                        'summary': f'热度: {rec.get("view_count",0)}阅 评论: {rec.get("comment_count",0)} 来源: 牛客网 关键词: {query}',
+                        'company': detect_company(title + rec.get('company', '')),
+                        'platform': 'nowcoder',
+                        'position': rec.get('job_title', '') or detect_position(title),
+                        'created_at': created,
+                    }
+                    item['quality'] = quality_score(item)
+                    if item['quality'] >= 4:
+                        items.append(item)
+        except Exception as e:
+            pass
     
+    items = dedup(items)
+    print(f'[exp] 牛客获取 {len(items)} 条')
+    return items
     return items
 
-def yaml_or_json_load(text):
-    """尝试解析 JSON 或 YAML"""
-    try:
-        return json.loads(text)
-    except:
-        import yaml
-        return yaml.safe_load(text)
 
-def merge_and_dedupe(existing_items, new_items):
-    """合并去重，按时间排序"""
-    all_items = {item['id']: item for item in existing_items}
-    for item in new_items:
-        all_items[item['id']] = item  # 新数据覆盖旧数据
+# ─────────────────────────────────────────────
+# GitHub 面试题仓库（结构化内容，无需 Cookie）
+# ─────────────────────────────────────────────
+def fetch_github_interview():
+    """搜索 GitHub 上的 AI Agent 面试题仓库，作为结构化面经补充"""
+    items = []
+    if not os.path.exists(GITHUB_SEARCH):
+        return items
     
-    items = list(all_items.values())
-    items.sort(key=lambda x: x.get('fetched_at', ''), reverse=True)
-    return items[:MAX_ITEMS]
+    queries = [
+        ('AI agent interview questions', 10),
+        ('LLM 大模型 面试题', 50),
+        ('machine learning interview 算法', 100),
+    ]
+    
+    for query, min_stars in queries:
+        try:
+            result = subprocess.run(
+                ['node', GITHUB_SEARCH, query, '--min-stars', str(min_stars), '--limit', '5', '--output', 'json'],
+                capture_output=True, text=True, timeout=20
+            )
+            if result.returncode == 0 and result.stdout:
+                data = json.loads(result.stdout)
+                for repo in data.get('repositories', []):
+                    name = repo.get('full_name', '')
+                    url = repo.get('html_url', '')
+                    desc = repo.get('description', '') or ''
+                    stars = repo.get('stargazers_count', 0)
+                    title = f'[GitHub 仓库] {name} ★{stars}'
+                    summary = desc[:200]
+                    
+                    if not is_relevant(name + ' ' + desc):
+                        continue
+                    
+                    item = {
+                        'id': hashlib.md5(url.encode()).hexdigest()[:12],
+                        'title': title,
+                        'url': url,
+                        'summary': f'{summary} | 来源：GitHub 面试题仓库',
+                        'company': 'other',
+                        'platform': 'github',
+                        'position': detect_position(name + desc),
+                        'created_at': datetime.datetime.now().strftime('%Y-%m-%d'),
+                    }
+                    item['quality'] = 6  # GitHub 仓库固定给6分
+                    items.append(item)
+        except:
+            pass
+    
+    items = dedup(items)
+    print(f'[exp] GitHub 仓库 {len(items)} 条')
+    return items
+
+
+# ─────────────────────────────────────────────
+# 脉脉（可选，登录态有效时采集）
+# ─────────────────────────────────────────────
+def fetch_maimai():
+    if not os.path.exists(MAIMAI_BIN):
+        return []
+    try:
+        check = subprocess.run(
+            [MAIMAI_BIN, 'status', '--json'],
+            capture_output=True, text=True, timeout=8,
+            env={**os.environ, 'PATH': '/root/.local/bin:' + os.environ.get('PATH', '')}
+        )
+        status = json.loads(check.stdout)
+        if not status.get('data', {}).get('looks_logged_in'):
+            print('[exp] 脉脉未登录，跳过')
+            return []
+    except:
+        return []
+
+    items = []
+    try:
+        for kw in ['AI Agent', '大模型 面试', 'LLM 工程师']:
+            result = subprocess.run(
+                [MAIMAI_BIN, 'search', kw, '--section', 'gossips', '--limit', '10', '--json'],
+                capture_output=True, text=True, timeout=20,
+                env={**os.environ, 'PATH': '/root/.local/bin:' + os.environ.get('PATH', '')}
+            )
+            if result.returncode == 0 and result.stdout:
+                data = json.loads(result.stdout)
+                for post in data.get('data', {}).get('gossips', []):
+                    text = post.get('text', post.get('content', ''))
+                    if not is_relevant(text): continue
+                    title = text[:80]
+                    item = {
+                        'id': hashlib.md5((title + str(post.get('id', ''))).encode()).hexdigest()[:12],
+                        'title': title,
+                        'url': post.get('url', ''),
+                        'summary': text[:300],
+                        'company': detect_company(post.get('company', '') + ' ' + text),
+                        'platform': 'maimai',
+                        'position': detect_position(text),
+                        'created_at': datetime.datetime.now().strftime('%Y-%m-%d'),
+                    }
+                    item['quality'] = quality_score(item)
+                    if item['quality'] >= 4:
+                        items.append(item)
+    except Exception as e:
+        print(f'[exp] 脉脉采集失败: {e}')
+    print(f'[exp] 脉脉获取 {len(items)} 条')
+    return items
+
 
 def main():
-    print(f"[experiences] 开始采集 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}...")
-    
-    data = {"items": []}
-    try:
-        with open(DATA_FILE) as f:
-            data = json.load(f)
-    except:
-        pass
-    
-    existing_items = data.get('items', [])
-    new_items = []
-    
-    # 采集各平台
-    new_items.extend(fetch_nowcoder())
-    new_items.extend(fetch_maimai())
-    
+    print(f'[exp] 开始采集 {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}...')
+    existing = load_existing()
+    existing_ids = {item['id'] for item in existing.get('items', [])}
+
+    all_items = []
+    all_items += fetch_nowcoder()
+    all_items += fetch_github_interview()
+    all_items += fetch_maimai()
+
+    all_items = dedup(all_items)
+    new_items = [i for i in all_items if i.get('id') not in existing_ids]
+
+    merged = new_items + existing.get('items', [])
+    merged = dedup(merged)[:MAX_ITEMS]
+
     if not new_items:
-        print("[experiences] 本次未获取到新内容")
-        return
-    
-    merged = merge_and_dedupe(existing_items, new_items)
-    result = {
-        "items": merged,
-        "updated_at": datetime.datetime.now().isoformat(),
-        "total": len(merged)
-    }
-    
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+        print('[exp] 本次未获取到新内容')
+    else:
+        print(f'[exp] ✅ 新增 {len(new_items)} 条，共 {len(merged)} 条')
+
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
-    
-    print(f"[experiences] ✅ 共 {len(merged)} 条面经（新增 {len(new_items)} 条）")
+        json.dump({
+            "items": merged,
+            "updated_at": datetime.datetime.now().isoformat()
+        }, f, ensure_ascii=False, indent=2)
 
 if __name__ == '__main__':
     main()
