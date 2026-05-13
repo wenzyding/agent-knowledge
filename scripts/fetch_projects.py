@@ -103,7 +103,7 @@ def fetch_trending():
     return items
 
 def fetch_github_search():
-    """用 github-search skill 检索 AI Agent 相关项目"""
+    """用 github-search skill 检索 AI Agent 相关项目（解析 JSON 输出）"""
     items = []
     
     if not os.path.exists(GITHUB_SEARCH):
@@ -127,42 +127,34 @@ def fetch_github_search():
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0 and result.stdout:
-                # 解析输出（github-search 输出 markdown 表格，需要解析）
-                lines = result.stdout.split('\n')
-                for line in lines:
-                    # 解析 markdown 表格行
-                    if '|' in line and 'github.com' in line:
-                        parts = [p.strip() for p in line.split('|')]
-                        for part in parts:
-                            if 'github.com/' in part:
-                                # 提取仓库名和链接
-                                import re
-                                match = re.search(r'\[([^\]]+)\]\((https://github\.com/[^\)]+)\)', part)
-                                if match:
-                                    name = match.group(1)
-                                    url = match.group(2)
-                                    # 提取 stars
-                                    stars_match = re.search(r'(\d+\.?\d*)[kK]?', parts[2] if len(parts) > 2 else '')
-                                    stars_raw = parts[2].strip() if len(parts) > 2 else '0'
-                                    stars = parse_stars(stars_raw)
-                                    desc = parts[5].strip() if len(parts) > 5 else ''
-                                    lang_detected = parts[4].strip() if len(parts) > 4 else ''
-                                    
-                                    item = {
-                                        'id': hashlib.md5(url.encode()).hexdigest()[:12],
-                                        'name': name,
-                                        'url': url,
-                                        'description': desc[:200],
-                                        'stars': stars,
-                                        'trending': False,
-                                        'language': lang_detected,
-                                        'category': detect_category(name, desc),
-                                        'fetched_at': datetime.datetime.now().isoformat(),
-                                        'updated_at': parts[6].strip() if len(parts) > 6 else '',
-                                    }
-                                    
-                                    if quality_filter(item):
-                                        items.append(item)
+                # github-search 输出 JSON 格式
+                try:
+                    data = json.loads(result.stdout)
+                    repos = data.get('repositories', [])
+                    for repo in repos:
+                        name = repo.get('full_name', '')
+                        url = repo.get('html_url', '')
+                        desc = repo.get('description', '') or ''
+                        stars = repo.get('stargazers_count', 0) or 0
+                        lang_detected = repo.get('language', '') or ''
+                        pushed = repo.get('pushed_at', '')[:10] if repo.get('pushed_at') else ''
+                        
+                        item = {
+                            'id': hashlib.md5(url.encode()).hexdigest()[:12],
+                            'name': name,
+                            'url': url,
+                            'description': desc[:200],
+                            'stars': stars,
+                            'trending': False,
+                            'language': lang_detected,
+                            'category': detect_category(name, desc),
+                            'fetched_at': datetime.datetime.now().isoformat(),
+                            'updated_at': pushed,
+                        }
+                        if quality_filter(item):
+                            items.append(item)
+                except json.JSONDecodeError:
+                    pass  # 非 JSON 输出跳过
         except Exception as e:
             print(f"[projects] 搜索 '{query}' 失败: {e}")
     
