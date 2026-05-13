@@ -136,7 +136,7 @@ def fetch_nowcoder():
                 if rc_type == 207 and content_id:
                     url = f'https://www.nowcoder.com/feed/main/detail/{content_id}'
                 elif uuid:
-                    url = f'https://www.nowcoder.com/discuss/{uuid}'
+                    url = f'https://www.nowcoder.com/feed/main/detail/{uuid}'
                 else:
                     continue
                 ts = rec.get('created_at', 0)
