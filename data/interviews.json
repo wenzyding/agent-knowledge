@@ -1,86 +1,82 @@
 {
   "items": [
     {
-      "title": "请详细解释 AI Agent 的 ReAct 框架，以及它如何解决 LLM 推理和行动分离的问题？",
-      "difficulty": "medium",
+      "title": "请详细解释 KV Cache 的工作原理，以及在大模型推理中如何优化其内存占用？",
+      "difficulty": "hard",
+      "domain": "llm-core",
       "questions": [
-        "ReAct = Reasoning + Acting，核心思想是什么？",
-        "与 Chain-of-Thought 相比，ReAct 的优势在哪里？",
-        "ReAct 在实际 Agent 系统中如何实现？",
-        "ReAct 的局限性有哪些？"
+        "KV Cache 缓存的是什么？为什么只缓存 K 和 V 而不缓存 Q？",
+        "KV Cache 的内存占用公式是什么？如何随序列长度增长？",
+        "PagedAttention 如何解决 KV Cache 内存碎片问题？",
+        "MHA/GQA/MQA 三种注意力机制对 KV Cache 大小的影响分别是什么？"
       ],
-      "refs": [
+      "answer": "<p>KV Cache 是大模型自回归解码时的核心优化技术，通过缓存已生成 token 的 Key 和 Value 矩阵，避免每次解码时重复计算。</p><h3>为什么只缓存 K 和 V</h3><ul><li>自回归解码时，每个新 token 的 Q 只与自身有关，无法复用</li><li>K 和 V 由已有 token 计算得出，在后续步骤中保持不变</li><li>缓存 K/V 将注意力计算从 O(n²) 降至 O(n)（每步）</li></ul><h3>内存占用</h3><pre>KV Cache 大小 = 2 × num_layers × num_heads × head_dim × seq_len × batch_size × dtype_bytes</pre><ul><li>LLaMA-2 70B 在 FP16 下，单条序列 KV Cache ≈ 80 tokens/MB</li><li>长序列（4K-128K）时 KV Cache 可超过模型权重本身</li></ul><h3>PagedAttention（vLLM 核心）</h3><ul><li>将 KV Cache 分割为固定大小的 Page（类似 OS 内存分页）</li><li>非连续物理内存存储，消除内存碎片，GPU 利用率提升 2-4x</li><li>支持 Copy-on-Write，实现 Beam Search / Speculative Decoding 的 KV 共享</li></ul><h3>GQA/MQA 优化</h3><ul><li><strong>MHA</strong>（标准）：每个头独立 KV，内存最大</li><li><strong>GQA</strong>（分组查询注意力）：多个 Q 头共享一组 KV，LLaMA-3 采用，KV 内存降低 num_groups 倍</li><li><strong>MQA</strong>（多查询注意力）：所有 Q 共享单组 KV，内存最小但质量略降</li></ul>",
+      "tips": "重点讲 PagedAttention 和 GQA，这是 vLLM 和主流开源模型的标配，面试官非常喜欢问 KV Cache 与 batch size/序列长度的内存关系。",
+      "date": "2026-05-14",
+      "id": "5bc133b35103",
+      "sources": [
         {
-          "title": "Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models. ICLR 2023",
-          "url": "https://arxiv.org/abs/2210.03629"
+          "label": "字节跳动 LLM 算法工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=LLM%E7%AE%97%E6%B3%95&category=6704215862603155720"
         },
         {
-          "title": "LangChain ReAct Agent 文档",
-          "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"
+          "label": "腾讯 大模型算法岗 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
         }
       ],
-      "answer": "<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。<sup class='cite'><a href='https://arxiv.org/abs/2210.03629' target='_blank'>[1]</a></sup></p>\n\n<h3>核心机制</h3>\n<ul>\n<li><strong>Thought</strong>：模型的内部推理过程，分析当前状态，规划下一步</li>\n<li><strong>Action</strong>：调用外部工具（搜索、计算器、API 等）</li>\n<li><strong>Observation</strong>：工具返回的结果，作为下一轮推理的输入</li>\n</ul>\n\n<h3>与 CoT 的区别</h3>\n<ul>\n<li>CoT 只有推理，没有与外部世界交互的能力</li>\n<li>ReAct 可以获取实时信息，解决知识截止日期问题</li>\n<li>ReAct 的推理过程更透明可解释</li>\n</ul>\n\n<h3>实现示例（伪代码）</h3>\n<pre>while not done:\n    thought = llm.think(context)       # Reasoning\n    action = llm.decide_action(thought) # Planning\n    observation = tools.execute(action) # Acting\n    context.append(thought, action, observation)\n    if action == \"FINISH\": break</pre>\n\n<h3>局限性</h3>\n<ul>\n<li>长任务中 context window 容易溢出</li>\n<li>工具调用失败时缺乏健壮的错误恢复</li>\n<li>推理步骤过多会导致 token 消耗极大</li>\n</ul>",
-      "tips": "重点强调 Thought-Action-Observation 循环，以及与 CoT 的本质区别。面试官通常会追问如何处理工具调用失败的情况。",
+      "refs": []
+    },
+    {
+      "title": "解释 OpenAI Function Calling 和 MCP（Model Context Protocol）的设计理念，两者有何本质区别？",
+      "difficulty": "medium",
+      "domain": "tool-use",
+      "questions": [
+        "Function Calling 的请求/响应流程是什么？JSON Schema 如何定义工具？",
+        "parallel_tool_calls 参数的作用，以及如何处理并行工具调用的结果合并？",
+        "MCP 协议的 Server/Client 架构是什么？Resources/Tools/Prompts 三类原语分别是什么？",
+        "什么场景下选择 Function Calling，什么场景下选择 MCP？"
+      ],
+      "answer": "<p>Function Calling 和 MCP 都是让 LLM 调用外部工具的机制，但设计层次不同。</p><h3>Function Calling 机制</h3><ul><li>在 API 请求中传入 <code>tools</code> 数组，每个工具含 name/description/parameters（JSON Schema）</li><li>模型返回 <code>tool_calls</code>，包含工具名和参数</li><li>应用执行工具，将结果以 <code>role: tool</code> 消息回传</li><li>模型根据结果继续生成</li></ul><pre>// 并行工具调用示例\n{\n  \"tool_calls\": [\n    {\"id\": \"call_1\", \"function\": {\"name\": \"search\", \"arguments\": \"{...}\"}},\n    {\"id\": \"call_2\", \"function\": {\"name\": \"calculator\", \"arguments\": \"{...\"}}\n  ]\n}</pre><h3>MCP 协议架构</h3><ul><li><strong>Server</strong>：提供 Resources（数据）、Tools（可执行操作）、Prompts（模板）三类原语</li><li><strong>Client</strong>：LLM 应用，通过 stdio 或 HTTP SSE 与 Server 通信</li><li><strong>Host</strong>：Claude Desktop/Cursor 等宿主应用</li></ul><h3>本质区别</h3><ul><li>Function Calling 是<strong>协议层</strong>：定义 LLM 如何请求工具调用，每次对话需重新传入工具定义</li><li>MCP 是<strong>生态层</strong>：定义工具服务的标准化接口，工具可复用、可发现、可组合</li><li>MCP Server 可同时服务多个 LLM 应用，类似微服务</li></ul><h3>选择建议</h3><ul><li>单应用内置工具 → Function Calling 够用</li><li>跨应用共享工具、第三方集成、复杂工具生态 → MCP</li></ul>",
+      "tips": "MCP 是 2024 年底 Anthropic 推出的新协议，已成为 AI Agent 工具生态标准，务必理解其三类原语和与 Function Calling 的层次差异。",
       "date": "2026-05-14",
-      "id": "2026-05-14-0",
+      "id": "181b4b739df8",
       "sources": [
         {
           "label": "腾讯 AI Agent 工程师 JD",
           "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
         },
         {
-          "label": "字节跳动 AI Agent 岗位 JD",
-          "url": "https://jobs.bytedance.com/experienced/position?keywords=Agent&category=6704215862603155720"
+          "label": "美团 AI 工程师 JD",
+          "url": "https://zhaopin.meituan.com/?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"
         }
-      ]
+      ],
+      "refs": []
     },
     {
-      "title": "在设计多 Agent 协作系统时，如何解决 Agent 之间的通信协调和任务分配问题？",
+      "title": "详细解释 Speculative Decoding（推测解码）的原理，以及它如何在不降低质量的前提下加速大模型推理？",
       "difficulty": "hard",
+      "domain": "inference",
       "questions": [
-        "多 Agent 系统的常见架构模式（Hierarchical/Flat/Hybrid）？",
-        "如何设计 Agent 间的消息传递协议？",
-        "任务分配策略：静态分配 vs 动态分配？",
-        "如何处理 Agent 之间的冲突和死锁？"
+        "Speculative Decoding 的 Draft-Verify 两阶段流程是什么？",
+        "接受率（Acceptance Rate）如何影响加速比？",
+        "草稿模型（Draft Model）如何选取？Self-Speculative 是什么？",
+        "Speculative Decoding 是否会影响输出分布的无偏性？如何保证？"
       ],
-      "answer": "<p>多 Agent 系统（MAS）设计是 AI Agent 工程中的核心难题，主要涉及架构设计、通信协议和协调机制三个层面。</p>\n\n<h3>常见架构模式</h3>\n<ul>\n<li><strong>层级式（Hierarchical）</strong>：Orchestrator Agent 负责任务分解和分配，Sub-Agent 负责执行。代表：AutoGen、CrewAI</li>\n<li><strong>扁平式（Flat）</strong>：Agent 之间平等协作，通过共享状态或消息队列通信</li>\n<li><strong>混合式（Hybrid）</strong>：结合两种模式，适合复杂场景</li>\n</ul>\n\n<h3>通信协调方案</h3>\n<ul>\n<li><strong>共享内存</strong>：所有 Agent 读写同一个状态存储（如 Redis）</li>\n<li><strong>消息队列</strong>：基于 Pub/Sub 模式（如 Kafka），解耦 Agent 间依赖</li>\n<li><strong>直接调用</strong>：Orchestrator 直接调用 Sub-Agent API</li>\n</ul>\n\n<h3>任务分配策略</h3>\n<ul>\n<li>基于 Agent 能力描述（Capability Registry）进行匹配</li>\n<li>动态负载均衡，避免单个 Agent 成为瓶颈</li>\n<li>使用 DAG（有向无环图）描述任务依赖关系</li>\n</ul>",
-      "tips": "结合具体框架（如 LangGraph、AutoGen）来回答，体现工程实践经验。",
+      "answer": "<p>Speculative Decoding 是大模型推理加速的核心技术之一，通过小模型快速草稿 + 大模型批量验证实现 2-3x 加速，且理论上不改变输出分布。</p><h3>核心流程</h3><ul><li><strong>Draft 阶段</strong>：小模型（Draft Model）自回归生成 γ 个候选 token（如 4-8 个）</li><li><strong>Verify 阶段</strong>：大模型（Target Model）对所有 γ+1 个位置<strong>并行</strong>计算 logits（利用 KV Cache 并行性）</li><li><strong>接受/拒绝</strong>：逐 token 按接受率采样，拒绝的 token 从大模型分布重新采样，截断后续草稿</li></ul><pre>加速比 ≈ (1 + α + α² + ... + αᵞ) × (T_draft / T_target)\n其中 α = 平均接受率 ∈ [0, 1]</pre><h3>无偏性保证</h3><ul><li>采用投机采样（Speculative Sampling）而非贪心接受</li><li>拒绝时从 max(0, p_target - p_draft) 归一化分布重新采样</li><li>数学上证明最终输出分布与单独运行大模型完全一致</li></ul><h3>草稿模型选取</h3><ul><li>同系列小模型：如 LLaMA-3 70B + LLaMA-3 8B，接受率更高</li><li><strong>Self-Speculative</strong>：同一模型通过跳过中间层生成草稿（EAGLE-2），无需额外模型</li><li><strong>Medusa</strong>：大模型添加多头预测层，并行预测多个未来 token</li></ul><h3>工程实践</h3><ul><li>vLLM、TGI 均已集成 Speculative Decoding</li><li>适合长文生成、代码生成（接受率高）；短输出场景收益有限</li></ul>",
+      "tips": "重点强调无偏性证明（与贪心 Speculative Decoding 的区别），以及 EAGLE/Medusa 等 Self-Speculative 变体，体现对前沿推理加速技术的掌握。",
       "date": "2026-05-14",
-      "id": "2026-05-14-1",
+      "id": "dff39a214f90",
       "sources": [
         {
-          "label": "阿里巴巴 大模型算法工程师 JD",
-          "url": "https://talent.alibaba.com/off-campus/position-list?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"
+          "label": "字节跳动 推理优化工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96&category=6704215862603155720"
         },
         {
-          "label": "百度 大模型工程师 JD",
-          "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"
+          "label": "阿里巴巴 模型推理工程师 JD",
+          "url": "https://talent.alibaba.com/off-campus/position-list?keywords=%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E"
         }
-      ]
-    },
-    {
-      "title": "解释 RAG（检索增强生成）在 Agent 系统中的作用，以及如何优化 RAG 的检索质量？",
-      "difficulty": "medium",
-      "questions": [
-        "Naive RAG vs Advanced RAG vs Modular RAG 的区别？",
-        "向量检索的常用相似度算法？",
-        "如何解决 Chunk 粒度问题？",
-        "Re-ranking 的作用和常见方案？"
       ],
-      "answer": "<p>RAG 是 Agent 系统中解决 LLM 知识局限性的核心技术，通过检索外部知识库来增强生成质量。</p>\n\n<h3>RAG 演进</h3>\n<ul>\n<li><strong>Naive RAG</strong>：简单的向量检索 + 拼接 Context + 生成</li>\n<li><strong>Advanced RAG</strong>：引入 Query 改写、混合检索、Re-ranking</li>\n<li><strong>Modular RAG</strong>：各模块可替换，支持路由、融合、自适应检索</li>\n</ul>\n\n<h3>检索质量优化关键点</h3>\n<ul>\n<li><strong>Chunking 策略</strong>：固定大小 vs 语义分块，chunk 重叠比例设置（建议 10-20%）</li>\n<li><strong>Embedding 选择</strong>：BGE-M3、text-embedding-3 等，注意领域适配</li>\n<li><strong>混合检索</strong>：向量检索 + BM25 关键词检索，用 RRF 融合排序</li>\n<li><strong>Re-ranking</strong>：使用 Cross-Encoder 对 Top-K 结果重排序，提升精度</li>\n<li><strong>HyDE</strong>：先让 LLM 生成假设性答案，再用该答案检索</li>\n</ul>\n\n<h3>常见坑</h3>\n<ul>\n<li>Context 超长导致 LLM \"迷失在中间\"（Lost in the Middle）</li>\n<li>Chunk 切割破坏语义完整性</li>\n<li>检索到相关但不准确的内容，引入噪音</li>\n</ul>",
-      "tips": "面试时能提到 HyDE、RAG-Fusion、Self-RAG 等进阶方案会加分很多。",
-      "date": "2026-05-14",
-      "id": "2026-05-14-2",
-      "sources": [
-        {
-          "label": "腾讯 AI 工程师 JD",
-          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=RAG&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
-        },
-        {
-          "label": "阿里巴巴 算法工程师 JD",
-          "url": "https://talent.alibaba.com/off-campus/position-list?keywords=RAG%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA"
-        }
-      ]
+      "refs": []
     },
     {
       "title": "请详细解释 AI Agent 的 ReAct 框架，以及它如何解决 LLM 推理和行动分离的问题？",
@@ -155,5 +151,5 @@
       ]
     }
   ],
-  "updated_at": "2026-05-14T00:50:24.908205"
+  "updated_at": "2026-05-14T15:10:29.857769"
 }

@@ -1,19 +1,66 @@
 #!/usr/bin/env python3
 """
-Tab1: 模拟面试题目生成脚本
-- 检索 AI Agent 相关 JD、技术博客、文档
-- 用 LLM 生成高质量面试题目+答案
-- 输出到 data/interviews.json
+Tab1: 模拟面试题目写入脚本
+用法: python3 fetch_interviews.py write '<json_string>'
+      python3 fetch_interviews.py check   # 检查今天是否已有数据
+- 由 daily cron agentTurn 调用：Agent 负责生成题目内容，本脚本负责写入 JSON
 """
 import json
 import os
 import sys
-import subprocess
 import datetime
-import re
+import hashlib
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), '../data/interviews.json')
-MAX_ITEMS = 30  # 保留最近30天
+MAX_ITEMS = 30
+
+# 来源配置：按方向分类映射到具体 JD
+SOURCES_BY_DOMAIN = {
+    "agent-arch": [
+        {"label": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+        {"label": "字节跳动 AI Agent 岗位 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=Agent&category=6704215862603155720"},
+    ],
+    "multi-agent": [
+        {"label": "阿里巴巴 大模型算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+        {"label": "百度 大模型工程师 JD", "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+    ],
+    "tool-use": [
+        {"label": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+        {"label": "美团 AI 工程师 JD", "url": "https://zhaopin.meituan.com/?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+    ],
+    "rag": [
+        {"label": "腾讯 RAG/AI 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=RAG&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+        {"label": "阿里巴巴 算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=RAG%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA"},
+    ],
+    "memory": [
+        {"label": "字节跳动 AI 应用工程师 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8&category=6704215862603155720"},
+        {"label": "百度 大模型工程师 JD", "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+    ],
+    "llm-core": [
+        {"label": "字节跳动 LLM 算法工程师 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=LLM%E7%AE%97%E6%B3%95&category=6704215862603155720"},
+        {"label": "腾讯 大模型算法岗 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+    ],
+    "inference": [
+        {"label": "字节跳动 推理优化工程师 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=%E6%8E%A8%E7%90%86%E4%BC%98%E5%8C%96&category=6704215862603155720"},
+        {"label": "阿里巴巴 模型推理工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=%E6%8E%A8%E7%90%86%E5%BC%95%E6%93%8E"},
+    ],
+    "prompt": [
+        {"label": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+        {"label": "百度 Prompt 工程师 JD", "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Prompt%E5%B7%A5%E7%A8%8B"},
+    ],
+    "eval": [
+        {"label": "阿里巴巴 大模型评测工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E6%B5%8B"},
+        {"label": "字节跳动 AI 质量工程师 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=AI%E8%AF%84%E6%B5%8B&category=6704215862603155720"},
+    ],
+    "engineering": [
+        {"label": "腾讯 AI 后端工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=AI%E5%90%8E%E7%AB%AF&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+        {"label": "美团 AI 工程师 JD", "url": "https://zhaopin.meituan.com/?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+    ],
+    "safety": [
+        {"label": "字节跳动 AI 安全工程师 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=AI%E5%AE%89%E5%85%A8&category=6704215862603155720"},
+        {"label": "腾讯 大模型安全岗 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%AE%89%E5%85%A8&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+    ],
+}
 
 def load_existing():
     try:
@@ -22,216 +69,80 @@ def load_existing():
     except:
         return {"items": []}
 
-def fetch_jd_content():
-    """通过 web_search + sogo 检索最新 AI Agent JD 和技术文档"""
-    sources = [
-        "AI Agent 工程师 招聘 腾讯 字节 阿里 2024 2025",
-        "LLM Agent 面试题 技术要求",
-        "AI Agent 开发 技术栈 技能要求",
-    ]
-    results = []
-    for query in sources:
-        try:
-            # 使用系统搜索能力
-            result = subprocess.run(
-                ['python3', '-c', f'''
-import urllib.request, json, urllib.parse
-q = urllib.parse.quote("{query}")
-# 使用搜狗搜索
-url = f"https://www.sogou.com/web?query={{q}}&num=5"
-req = urllib.request.Request(url, headers={{"User-Agent": "Mozilla/5.0"}})
-try:
-    resp = urllib.request.urlopen(req, timeout=10)
-    content = resp.read().decode("utf-8", errors="ignore")
-    print(content[:2000])
-except Exception as e:
-    print(f"Error: {{e}}")
-'''],
-                capture_output=True, text=True, timeout=15
-            )
-            if result.stdout:
-                results.append({"query": query, "content": result.stdout[:1500]})
-        except:
-            pass
-    return results
-
-def generate_interview_item(date_str, topic_num):
-    """生成一道面试题（由 OpenClaw agent 在 cron 任务中调用时会使用 LLM）"""
-    
-    # 预设的高质量题目池（会被 LLM 更新）
-    TOPIC_POOL = [
-        {
-            "title": "请详细解释 AI Agent 的 ReAct 框架，以及它如何解决 LLM 推理和行动分离的问题？",
-            "difficulty": "medium",
-            "sources": [
-                {"label": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
-                {"label": "字节跳动 AI Agent 岗位 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=Agent&category=6704215862603155720"}
-            ],
-            "questions": [
-                "ReAct = Reasoning + Acting，核心思想是什么？",
-                "与 Chain-of-Thought 相比，ReAct 的优势在哪里？",
-                "ReAct 在实际 Agent 系统中如何实现？",
-                "ReAct 的局限性有哪些？"
-            ],
-            "refs": [
-                {"title": "Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models. ICLR 2023", "url": "https://arxiv.org/abs/2210.03629"},
-                {"title": "LangChain ReAct Agent 文档", "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"}
-            ],
-            "answer": """<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。<sup class='cite'><a href='https://arxiv.org/abs/2210.03629' target='_blank'>[1]</a></sup></p>
-
-<h3>核心机制</h3>
-<ul>
-<li><strong>Thought</strong>：模型的内部推理过程，分析当前状态，规划下一步</li>
-<li><strong>Action</strong>：调用外部工具（搜索、计算器、API 等）</li>
-<li><strong>Observation</strong>：工具返回的结果，作为下一轮推理的输入</li>
-</ul>
-
-<h3>与 CoT 的区别</h3>
-<ul>
-<li>CoT 只有推理，没有与外部世界交互的能力</li>
-<li>ReAct 可以获取实时信息，解决知识截止日期问题</li>
-<li>ReAct 的推理过程更透明可解释</li>
-</ul>
-
-<h3>实现示例（伪代码）</h3>
-<pre>while not done:
-    thought = llm.think(context)       # Reasoning
-    action = llm.decide_action(thought) # Planning
-    observation = tools.execute(action) # Acting
-    context.append(thought, action, observation)
-    if action == "FINISH": break</pre>
-
-<h3>局限性</h3>
-<ul>
-<li>长任务中 context window 容易溢出</li>
-<li>工具调用失败时缺乏健壮的错误恢复</li>
-<li>推理步骤过多会导致 token 消耗极大</li>
-</ul>""",
-            "tips": "重点强调 Thought-Action-Observation 循环，以及与 CoT 的本质区别。面试官通常会追问如何处理工具调用失败的情况。"
-        },
-        {
-            "title": "在设计多 Agent 协作系统时，如何解决 Agent 之间的通信协调和任务分配问题？",
-            "difficulty": "hard",
-            "sources": [
-                {"label": "阿里巴巴 大模型算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
-                {"label": "百度 大模型工程师 JD", "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"}
-            ],
-            "questions": [
-                "多 Agent 系统的常见架构模式（Hierarchical/Flat/Hybrid）？",
-                "如何设计 Agent 间的消息传递协议？",
-                "任务分配策略：静态分配 vs 动态分配？",
-                "如何处理 Agent 之间的冲突和死锁？"
-            ],
-            "answer": """<p>多 Agent 系统（MAS）设计是 AI Agent 工程中的核心难题，主要涉及架构设计、通信协议和协调机制三个层面。</p>
-
-<h3>常见架构模式</h3>
-<ul>
-<li><strong>层级式（Hierarchical）</strong>：Orchestrator Agent 负责任务分解和分配，Sub-Agent 负责执行。代表：AutoGen、CrewAI</li>
-<li><strong>扁平式（Flat）</strong>：Agent 之间平等协作，通过共享状态或消息队列通信</li>
-<li><strong>混合式（Hybrid）</strong>：结合两种模式，适合复杂场景</li>
-</ul>
-
-<h3>通信协调方案</h3>
-<ul>
-<li><strong>共享内存</strong>：所有 Agent 读写同一个状态存储（如 Redis）</li>
-<li><strong>消息队列</strong>：基于 Pub/Sub 模式（如 Kafka），解耦 Agent 间依赖</li>
-<li><strong>直接调用</strong>：Orchestrator 直接调用 Sub-Agent API</li>
-</ul>
-
-<h3>任务分配策略</h3>
-<ul>
-<li>基于 Agent 能力描述（Capability Registry）进行匹配</li>
-<li>动态负载均衡，避免单个 Agent 成为瓶颈</li>
-<li>使用 DAG（有向无环图）描述任务依赖关系</li>
-</ul>""",
-            "tips": "结合具体框架（如 LangGraph、AutoGen）来回答，体现工程实践经验。"
-        },
-        {
-            "title": "解释 RAG（检索增强生成）在 Agent 系统中的作用，以及如何优化 RAG 的检索质量？",
-            "difficulty": "medium",
-            "sources": [
-                {"label": "腾讯 AI 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=RAG&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
-                {"label": "阿里巴巴 算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=RAG%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA"}
-            ],
-            "questions": [
-                "Naive RAG vs Advanced RAG vs Modular RAG 的区别？",
-                "向量检索的常用相似度算法？",
-                "如何解决 Chunk 粒度问题？",
-                "Re-ranking 的作用和常见方案？"
-            ],
-            "answer": """<p>RAG 是 Agent 系统中解决 LLM 知识局限性的核心技术，通过检索外部知识库来增强生成质量。</p>
-
-<h3>RAG 演进</h3>
-<ul>
-<li><strong>Naive RAG</strong>：简单的向量检索 + 拼接 Context + 生成</li>
-<li><strong>Advanced RAG</strong>：引入 Query 改写、混合检索、Re-ranking</li>
-<li><strong>Modular RAG</strong>：各模块可替换，支持路由、融合、自适应检索</li>
-</ul>
-
-<h3>检索质量优化关键点</h3>
-<ul>
-<li><strong>Chunking 策略</strong>：固定大小 vs 语义分块，chunk 重叠比例设置（建议 10-20%）</li>
-<li><strong>Embedding 选择</strong>：BGE-M3、text-embedding-3 等，注意领域适配</li>
-<li><strong>混合检索</strong>：向量检索 + BM25 关键词检索，用 RRF 融合排序</li>
-<li><strong>Re-ranking</strong>：使用 Cross-Encoder 对 Top-K 结果重排序，提升精度</li>
-<li><strong>HyDE</strong>：先让 LLM 生成假设性答案，再用该答案检索</li>
-</ul>
-
-<h3>常见坑</h3>
-<ul>
-<li>Context 超长导致 LLM "迷失在中间"（Lost in the Middle）</li>
-<li>Chunk 切割破坏语义完整性</li>
-<li>检索到相关但不准确的内容，引入噪音</li>
-</ul>""",
-            "tips": "面试时能提到 HyDE、RAG-Fusion、Self-RAG 等进阶方案会加分很多。"
-        }
-    ]
-    
-    idx = topic_num % len(TOPIC_POOL)
-    item = TOPIC_POOL[idx].copy()
-    item["date"] = date_str
-    item["id"] = f"{date_str}-{topic_num}"
-    return item
-
-def main():
+def cmd_check():
+    """检查今天是否已有数据，以及近 30 天已用的题目方向"""
     today = datetime.date.today().isoformat()
     data = load_existing()
-    
-    # 检查今天是否已有数据
     existing_dates = {item.get("date") for item in data.get("items", [])}
+
     if today in existing_dates:
-        print(f"[interviews] 今日({today})已有数据，跳过")
+        print(f"ALREADY_DONE:{today}")
         return
-    
-    print(f"[interviews] 生成 {today} 面试题...")
-    
-    # 生成今日题目（3道）
+
+    # 输出近 30 天已有题目标题，供 Agent 避重
+    recent = [item["title"] for item in data.get("items", [])
+              if item.get("date", "") >= (datetime.date.today() - datetime.timedelta(days=30)).isoformat()]
+    print(f"NEED_GENERATE:{today}")
+    print(f"RECENT_COUNT:{len(recent)}")
+    for t in recent[:20]:
+        print(f"EXISTING_TITLE:{t}")
+
+def cmd_write(json_str):
+    """写入 Agent 生成的题目列表"""
+    today = datetime.date.today().isoformat()
+    try:
+        new_items_raw = json.loads(json_str)
+    except Exception as e:
+        print(f"[interviews] JSON 解析失败: {e}")
+        sys.exit(1)
+
+    if not isinstance(new_items_raw, list):
+        new_items_raw = [new_items_raw]
+
+    data = load_existing()
+    existing_ids = {item.get("id") for item in data.get("items", [])}
+
     new_items = []
-    for i in range(3):
-        item = generate_interview_item(today, i)
-        new_items.append(item)
-    
-    # 合并，保留最近30天
+    for item in new_items_raw:
+        domain = item.get("domain", "agent-arch")
+        item.setdefault("date", today)
+        item.setdefault("id", hashlib.md5(f"{today}-{item.get('title','')}".encode()).hexdigest()[:12])
+        item.setdefault("sources", SOURCES_BY_DOMAIN.get(domain, SOURCES_BY_DOMAIN["agent-arch"]))
+        item.setdefault("refs", [])
+        if item["id"] not in existing_ids:
+            new_items.append(item)
+
+    if not new_items:
+        print("[interviews] 无新题目写入")
+        return
+
     all_items = new_items + data.get("items", [])
-    
-    # 按日期排序，去重，保留最新30条
-    seen = set()
-    deduped = []
+    seen, deduped = set(), []
     for item in all_items:
-        key = item.get("id", item.get("title", ""))
+        key = item.get("id") or item.get("title", "")
         if key not in seen:
             seen.add(key)
             deduped.append(item)
-    
-    deduped = sorted(deduped, key=lambda x: x.get("date",""), reverse=True)[:MAX_ITEMS]
-    
+
+    deduped = sorted(deduped, key=lambda x: x.get("date", ""), reverse=True)[:MAX_ITEMS]
+
     result = {"items": deduped, "updated_at": datetime.datetime.now().isoformat()}
-    
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
-    
-    print(f"[interviews] ✅ 写入 {len(deduped)} 条题目")
+
+    print(f"[interviews] ✅ 写入 {len(new_items)} 道新题，共 {len(deduped)} 条")
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) < 2:
+        print("用法: fetch_interviews.py check | write '<json>'")
+        sys.exit(1)
+
+    cmd = sys.argv[1]
+    if cmd == "check":
+        cmd_check()
+    elif cmd == "write" and len(sys.argv) >= 3:
+        cmd_write(sys.argv[2])
+    else:
+        print(f"未知命令: {cmd}")
+        sys.exit(1)
