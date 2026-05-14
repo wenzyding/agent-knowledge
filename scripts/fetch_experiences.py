@@ -6,8 +6,8 @@ Tab2: 面经采集脚本（无需任何 Cookie）
   2. 脉脉（有登录态时额外补充，失败静默跳过）
 注意：GitHub 来源已移除（内容质量和合规性难以保证）
 """
-import json, os, subprocess, datetime, hashlib, urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import json, os, subprocess, datetime, hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed  # kept for maimai if needed
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), '../data/experiences.json')
 SKILLS_DIR = os.path.expanduser('~/.openclaw/workspace/skills')
@@ -101,23 +101,6 @@ def load_existing():
         with open(DATA_FILE) as f: return json.load(f)
     except: return {"items": [], "updated_at": ""}
 
-def verify_nowcoder_url(url):
-    """验证牛客 URL 真实可访问（读足够多内容捕获嵌入 JSON 里的错误信息）"""
-    if not url:
-        return False
-    try:
-        req = urllib.request.Request(
-            url,
-            headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0'}
-        )
-        with urllib.request.urlopen(req, timeout=8) as r:
-            html = r.read(65536).decode('utf-8', errors='replace')
-            if '内容不存在' in html or '帖子不存在' in html:
-                return False
-            return True
-    except:
-        return False
-
 # ── 牛客（主力，无需 Cookie）──
 def fetch_nowcoder():
     if not os.path.exists(NOWCODER_CLI):
@@ -125,25 +108,23 @@ def fetch_nowcoder():
         return []
 
     items = []
-    # 搜索词精确对应 AI Agent 方向，覆盖更多组合
-    queries = [
-        'AI Agent',
-        'LLM Agent',
-        'Agent工程师',
-        '大模型面经',
-        '大模型算法',
-        '大模型实习',
-        'RAG面试',
-        'LLM工程师',
-        'AIGC面经',
-        'NLP算法工程师',
-    ]
+    # 搜索词：incremental 模式精简为 5 个核心词，full 模式用全量
+    import sys as _sys
+    mode = _sys.argv[1] if len(_sys.argv) > 1 else 'incremental'
+    if mode == 'full':
+        queries = [
+            'AI Agent', '大模型面经', '大模型算法', 'RAG面试', 'LLM工程师',
+        ]
+    else:
+        queries = [
+            'AI Agent', '大模型面经', '大模型算法', 'RAG面试', 'LLM工程师',
+        ]
 
     for query in queries:
         try:
             result = subprocess.run(
                 ['python3', NOWCODER_CLI, 'search-posts', query],
-                capture_output=True, text=True, timeout=30
+                capture_output=True, text=True, timeout=20
             )
             if result.returncode != 0 or not result.stdout:
                 continue
@@ -198,19 +179,7 @@ def fetch_nowcoder():
             pass
 
     items = dedup(items)
-    total_before = len(items)
-
-    # 并行验证 URL 可访问性
-    if items:
-        valid = []
-        with ThreadPoolExecutor(max_workers=8) as ex:
-            futures = {ex.submit(verify_nowcoder_url, it['url']): it for it in items}
-            for fut in as_completed(futures):
-                if fut.result():
-                    valid.append(futures[fut])
-        items = valid
-
-    print(f'[exp] 牛客: 过滤后 {total_before} 条，URL验证通过 {len(items)} 条')
+    print(f'[exp] 牛客: 共 {len(items)} 条（已去重，跳过 URL 验证）')
     return items
 
 # ── 脉脉（可选，有登录态时使用）──
@@ -270,17 +239,17 @@ def main():
     print(f'[exp] 开始采集 {datetime.datetime.now().strftime("%Y-%m-%d %H:%M")} mode={mode}...')
     
     if mode == 'full':
-        # 全量模式：搜索过去180天
+        # 全量模式：搜索过去30天，3页，每词20条，控制耗时
         subprocess.run(
             ['python3', NOWCODER_CLI, 'update-config',
-             '--json-input', '{"time_window_days": 180, "max_pages": 10, "max_results_per_keyword": 50}'],
+             '--json-input', '{"time_window_days": 30, "max_pages": 3, "max_results_per_keyword": 20}'],
             capture_output=True
         )
     else:
         # 增量模式：只看最近3天，速度快
         subprocess.run(
             ['python3', NOWCODER_CLI, 'update-config',
-             '--json-input', '{"time_window_days": 3, "max_pages": 3, "max_results_per_keyword": 20}'],
+             '--json-input', '{"time_window_days": 3, "max_pages": 2, "max_results_per_keyword": 10}'],
             capture_output=True
         )
     
