@@ -206,31 +206,31 @@
 </header>
 
 <nav class="tabs">
-  <button class="tab-btn active" onclick="switchTab(0)">🎯 模拟面试 <span class="tab-badge" id="badge0">0</span></button>
-  <button class="tab-btn" onclick="switchTab(1)">📝 真实面经 <span class="tab-badge" id="badge1">0</span></button>
+  <button class="tab-btn active" onclick="switchTab(0)">🎯 每日练习 <span class="tab-badge" id="badge0">0</span></button>
+  <button class="tab-btn" onclick="switchTab(1)">📝 社区分享 <span class="tab-badge" id="badge1">0</span></button>
   <button class="tab-btn" onclick="switchTab(2)">📚 知识总结</button>
   <button class="tab-btn" onclick="switchTab(3)">🚀 开源项目 <span class="tab-badge" id="badge3">0</span></button>
 </nav>
 
 <main class="content">
 
-  <!-- ══ Tab1: 模拟面试 ══ -->
+  <!-- ══ Tab1: 每日练习 ══ -->
   <div class="tab-panel active" id="panel0">
     <div class="section-header">
       <div>
-        <div class="section-title">🎯 模拟面试题目</div>
-        <div class="section-subtitle">每日更新 · 基于真实大厂 JD 与技术文档生成 · 点击题目展开答案</div>
+        <div class="section-title">🎯 每日练习题目</div>
+        <div class="section-subtitle">每日更新 · 基于大厂 JD 与技术文档生成 · 点击题目展开答案</div>
       </div>
       <div class="update-badge">每日 <b>09:00</b> 更新</div>
     </div>
     <div id="interviews-container"><div class="loading"><div class="spinner"></div>加载中...</div></div>
   </div>
 
-  <!-- ══ Tab2: 真实面经 ══ -->
+  <!-- ══ Tab2: 社区分享 ══ -->
   <div class="tab-panel" id="panel1">
     <div class="section-header">
       <div>
-        <div class="section-title">📝 真实面经</div>
+        <div class="section-title">📝 社区分享</div>
         <div class="section-subtitle">来自牛客、脉脉、知乎 · 已过滤低质量内容 · 点击标题跳转原文</div>
       </div>
       <div class="update-badge">工作日每小时更新</div>
@@ -254,7 +254,7 @@
     <div class="section-header">
       <div>
         <div class="section-title">📚 结构化知识总结</div>
-        <div class="section-subtitle">汇总面试题、面经、开源项目技术栈 · 含引用来源 · 每日更新</div>
+        <div class="section-subtitle">汇总技术题目、社区内容、开源项目技术栈 · 含引用来源 · 每日更新</div>
       </div>
       <div class="update-badge">每日 <b>09:00</b> 更新</div>
     </div>
@@ -360,7 +360,7 @@ function renderInterviews(data) {
           ` : ''}
           <h3>💡 参考答案</h3>
           <div>${item.answer || ''}</div>
-          ${item.tips ? `<h3>🎯 面试技巧</h3><div>${item.tips}</div>` : ''}
+          ${item.tips ? `<h3>🎯 作答要点</h3><div>${item.tips}</div>` : ''}
           ${item.refs && item.refs.length ? `
             <div class="refs-section">
               <h4>📎 参考来源</h4>
@@ -387,7 +387,7 @@ let allExps = [];
 function renderExperiences(data) {
   const c = document.getElementById('experiences-container');
   if (!data || !data.items || !data.items.length) {
-    c.innerHTML = '<div class="no-data"><div class="icon">📭</div>暂无面经，等待下次采集...</div>';
+    c.innerHTML = '<div class="no-data"><div class="icon">📭</div>暂无内容，等待下次采集...</div>';
     return;
   }
   allExps = data.items;
@@ -401,7 +401,7 @@ const PLATFORM_LABEL = {nowcoder:'🐮 牛客',maimai:'💬 脉脉',zhihu:'🟢 
 
 function renderExpList(items) {
   const c = document.getElementById('experiences-container');
-  if (!items.length) { c.innerHTML = '<div class="no-data"><div class="icon">🔍</div>该条件下暂无面经</div>'; return; }
+  if (!items.length) { c.innerHTML = '<div class="no-data"><div class="icon">🔍</div>该条件下暂无内容</div>'; return; }
   c.innerHTML = items.map(item => `
     <div class="card exp-card">
       <div class="card-body">
@@ -430,7 +430,7 @@ function platformUrl(platform, fallback) {
   const urls = {
     nowcoder: 'https://www.nowcoder.com/discuss?type=3',
     maimai: 'https://maimai.cn',
-    zhihu: 'https://www.zhihu.com/search?q=AI+Agent+面经&type=content'
+    zhihu: 'https://www.zhihu.com/search?q=AI+Agent+%E7%BB%8F%E9%AA%8C&type=content'
   };
   return urls[platform] || '#';
 }
