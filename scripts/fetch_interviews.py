@@ -63,7 +63,10 @@ def generate_interview_item(date_str, topic_num):
         {
             "title": "请详细解释 AI Agent 的 ReAct 框架，以及它如何解决 LLM 推理和行动分离的问题？",
             "difficulty": "medium",
-            "source": "腾讯/字节 AI 岗位 JD",
+            "sources": [
+                {"label": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+                {"label": "字节跳动 AI Agent 岗位 JD", "url": "https://jobs.bytedance.com/experienced/position?keywords=Agent&category=6704215862603155720"}
+            ],
             "questions": [
                 "ReAct = Reasoning + Acting，核心思想是什么？",
                 "与 Chain-of-Thought 相比，ReAct 的优势在哪里？",
@@ -72,8 +75,7 @@ def generate_interview_item(date_str, topic_num):
             ],
             "refs": [
                 {"title": "Yao et al. ReAct: Synergizing Reasoning and Acting in Language Models. ICLR 2023", "url": "https://arxiv.org/abs/2210.03629"},
-                {"title": "LangChain ReAct Agent 文档", "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"},
-                {"title": "腾讯 AI Agent 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent"}
+                {"title": "LangChain ReAct Agent 文档", "url": "https://python.langchain.com/docs/modules/agents/agent_types/react"}
             ],
             "answer": """<p>ReAct（Reasoning + Acting）是 2022 年提出的 Agent 框架，核心思想是将推理轨迹（Reasoning Trace）和行动（Action）交错进行。<sup class='cite'><a href='https://arxiv.org/abs/2210.03629' target='_blank'>[1]</a></sup></p>
 
@@ -110,7 +112,10 @@ def generate_interview_item(date_str, topic_num):
         {
             "title": "在设计多 Agent 协作系统时，如何解决 Agent 之间的通信协调和任务分配问题？",
             "difficulty": "hard",
-            "source": "阿里/百度 大模型岗位",
+            "sources": [
+                {"label": "阿里巴巴 大模型算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"},
+                {"label": "百度 大模型工程师 JD", "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"}
+            ],
             "questions": [
                 "多 Agent 系统的常见架构模式（Hierarchical/Flat/Hybrid）？",
                 "如何设计 Agent 间的消息传递协议？",
@@ -144,7 +149,10 @@ def generate_interview_item(date_str, topic_num):
         {
             "title": "解释 RAG（检索增强生成）在 Agent 系统中的作用，以及如何优化 RAG 的检索质量？",
             "difficulty": "medium",
-            "source": "通用 AI 工程岗位",
+            "sources": [
+                {"label": "腾讯 AI 工程师 JD", "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=RAG&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="},
+                {"label": "阿里巴巴 算法工程师 JD", "url": "https://talent.alibaba.com/off-campus/position-list?keywords=RAG%E6%A3%80%E7%B4%A2%E5%A2%9E%E5%BC%BA"}
+            ],
             "questions": [
                 "Naive RAG vs Advanced RAG vs Modular RAG 的区别？",
                 "向量检索的常用相似度算法？",

@@ -312,23 +312,22 @@ function sourcePill(label, url, icon) {
   return `<span class="source-pill">${icon} ${label}</span>`;
 }
 
-// ── JD source URLs for companies ──
-const JD_URLS = {
-  '腾讯': 'https://careers.tencent.com/jobopportunity.html#!?keywords=Agent',
-  '字节跳动': 'https://jobs.bytedance.com/experienced/position?keywords=Agent',
-  '阿里巴巴': 'https://talent.alibaba.com/off-campus/position-list?keywords=Agent',
-  '百度': 'https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent',
-  '美团': 'https://zhaopin.meituan.com/?keywords=Agent',
-  '快手': 'https://zhaopin.kuaishou.com/official/#/recruit/list?keywords=Agent',
-};
-
-function getJdUrl(source) {
-  for (const [company, url] of Object.entries(JD_URLS)) {
-    if (source && source.includes(company)) return url;
+// ── JD source pills renderer ──
+// 支持新格式 sources:[{label, url}] 和旧格式 source:string 兼容
+function renderSourcePills(item) {
+  // 新格式：sources 数组
+  if (item.sources && item.sources.length) {
+    return item.sources.map(s =>
+      s.url
+        ? `<a class="source-pill" href="${s.url}" target="_blank" rel="noopener">🏢 ${s.label}</a>`
+        : `<span class="source-pill">🏢 ${s.label}</span>`
+    ).join('');
   }
-  // fallback: BOSS直聘搜索
-  if (source) return `https://www.zhipin.com/web/geek/job?query=${encodeURIComponent('AI Agent ' + source)}`;
-  return 'https://www.zhipin.com/web/geek/job?query=AI+Agent';
+  // 旧格式兼容：source 字符串，不带 URL
+  if (item.source) {
+    return `<span class="source-pill">🏢 ${item.source}</span>`;
+  }
+  return '';
 }
 
 // ── Render Tab1: Interviews ──
@@ -340,7 +339,6 @@ function renderInterviews(data) {
   }
   document.getElementById('badge0').textContent = data.items.length;
   c.innerHTML = data.items.map((item, i) => {
-    const sourceUrl = getJdUrl(item.source);
     return `
     <div class="card interview-card">
       <div class="card-header" onclick="toggleAnswer(${i})">
@@ -348,7 +346,7 @@ function renderInterviews(data) {
           <div class="interview-meta">
             <span class="date-tag ${item.date === today() ? 'today-tag' : ''}">${item.date}${item.date===today()?' · 今日':''}</span>
             <span class="difficulty-tag diff-${item.difficulty}">${{hard:'困难',medium:'中等',easy:'简单'}[item.difficulty]||item.difficulty}</span>
-            ${item.source ? `<a class="source-pill" href="${sourceUrl}" target="_blank" rel="noopener">🏢 ${item.source}</a>` : ''}
+            ${renderSourcePills(item)}
           </div>
           <div class="card-title">${item.title}</div>
         </div>
