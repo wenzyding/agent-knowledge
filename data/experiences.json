@@ -1,6 +1,39 @@
 {
   "items": [
     {
+      "id": "dca5fe9650da",
+      "title": "AI Agent 面试 Top50 必刷题",
+      "url": "https://www.nowcoder.com/discuss/886328246717911040",
+      "summary": "阅读: 100 | 评论: 2 | 来源: 牛客网 | 搜索词: AI Agent",
+      "company": "other",
+      "platform": "nowcoder",
+      "position": "LLM/Agent 工程师",
+      "created_at": "2026-05-19",
+      "quality": 6
+    },
+    {
+      "id": "e57ceaed9d72",
+      "title": "5.16鲸落spa agent开发面试",
+      "url": "https://www.nowcoder.com/feed/main/detail/7544e588ce794fc38a26237ef886896a",
+      "summary": "阅读: 428 | 评论: 1 | 来源: 牛客网 | 搜索词: AI Agent",
+      "company": "other",
+      "platform": "nowcoder",
+      "position": "LLM/Agent 工程师",
+      "created_at": "2026-05-16",
+      "quality": 6
+    },
+    {
+      "id": "28630ec8fab9",
+      "title": "面试 AI Agent 岗位最容易暴露的几大问题",
+      "url": "https://www.nowcoder.com/discuss/884952698703851520",
+      "summary": "阅读: 174 | 评论: 0 | 来源: 牛客网 | 搜索词: AI Agent",
+      "company": "other",
+      "platform": "nowcoder",
+      "position": "LLM/Agent 工程师",
+      "created_at": "2026-05-16",
+      "quality": 6
+    },
+    {
       "id": "49189e098a7e",
       "title": "遥望科技（Agent开发）面经",
       "url": "https://www.nowcoder.com/discuss/884757673818759168",
@@ -298,5 +331,5 @@
       "quality": 6
     }
   ],
-  "updated_at": "2026-05-16T00:51:13.533579"
+  "updated_at": "2026-05-20T00:53:46.727528"
 }

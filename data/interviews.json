@@ -1,6 +1,84 @@
 {
   "items": [
     {
+      "title": "深入解析 Transformer 中的 Attention 机制变体：MHA、MQA、GQA 的原理与工程权衡",
+      "difficulty": "hard",
+      "domain": "llm-core",
+      "questions": [
+        "解释 Multi-Head Attention（MHA）的计算过程，包括 Q/K/V 矩阵的维度变换和多头合并步骤",
+        "Multi-Query Attention（MQA）和 Grouped-Query Attention（GQA）分别如何减少 KV Cache 的内存占用？两者的工程取舍是什么？",
+        "在实际部署中，GQA 如何在推理速度和模型质量之间取得平衡？LLaMA-3 和 Mistral 为什么选择 GQA？",
+        "设计一个支持动态切换 MHA/GQA 注意力模式的推理引擎，需要考虑哪些工程挑战？"
+      ],
+      "answer": "<h3>MHA / MQA / GQA 全面解析</h3><h4>1. MHA 计算流程</h4><p>标准 Multi-Head Attention 将输入投影为 H 组独立的 Q、K、V，每组维度为 d_k = d_model/H。每头独立计算 Attention(Q_i, K_i, V_i) = softmax(Q_i K_i^T / sqrt(d_k)) V_i，最后拼接所有头并通过输出投影 W_O。KV Cache 大小 = 2 × layers × seq_len × H × d_k，随批次和序列长度线性增长，成为长上下文推理的瓶颈。</p><h4>2. MQA 原理与 GQA 改进</h4><p><strong>MQA</strong>（Noam Shazeer 2019）：所有 Query 头共享同一组 K 和 V，将 KV Cache 压缩至 MHA 的 1/H。代价是模型表达能力下降，在小模型上效果明显，大模型上质量损失较大。<br/><strong>GQA</strong>（Google 2023）：引入 G 个 KV 头组，每组服务 H/G 个 Query 头。G=1 等价于 MQA，G=H 等价于 MHA。GQA 实现了内存节省与质量的 Pareto 最优平衡：LLaMA-3-8B 使用 G=8（KV 头数），在保持 MHA 90%+ 质量的同时 KV Cache 缩小 8 倍。</p><h4>3. 工程选型</h4><p>vLLM、TGI 等推理框架对 GQA 有专门优化：KV Cache 按 GQA 分组存储，PagedAttention 的 block 分配也以 KV 头为单位。Mistral-7B 的 sliding window attention 结合 GQA，进一步控制长上下文内存。实测 GQA 在 batch_size>=4 时比 MHA 吞吐提升 1.5-3 倍。</p><h4>4. 动态切换工程挑战</h4><p>需解决：(1) checkpoint 兼容性——MHA 权重转 GQA 需对 KV 投影做平均池化或直接截断；(2) CUDA kernel 适配——FlashAttention-2 原生支持 GQA，需根据 G 值动态选择 kernel；(3) 运行时显存预分配策略需随 G 值调整 KV block 大小；(4) 量化兼容性——GQA 的 KV 共享使 per-head 量化粒度更粗，需评估精度损失。</p>",
+      "tips": "重点说明 KV Cache 内存公式、GQA 的 group 划分逻辑，以及 vLLM/TGI 的实现细节。避免只讲理论，要结合实际模型（LLaMA-3、Mistral）举例说明工程取舍。",
+      "date": "2026-05-20",
+      "id": "e2e63bff4d11",
+      "sources": [
+        {
+          "label": "字节跳动 LLM 算法工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=LLM%E7%AE%97%E6%B3%95&category=6704215862603155720"
+        },
+        {
+          "label": "腾讯 大模型算法岗 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
+        }
+      ],
+      "refs": []
+    },
+    {
+      "title": "设计具备长期记忆的 AI Agent：存储架构、检索策略与遗忘机制",
+      "difficulty": "hard",
+      "domain": "agent-arch",
+      "questions": [
+        "Agent 的记忆系统通常分为哪几个层次（Working Memory、Episodic Memory、Semantic Memory、Procedural Memory）？各自的技术实现方式是什么？",
+        "如何设计 Agent 的记忆写入策略？什么时候应该将 Working Memory 中的内容固化到长期存储？",
+        "在海量历史记忆中高效检索相关上下文，有哪些常见方案（向量检索、时间衰减、重要性评分）？如何避免检索噪声干扰 Agent 决策？",
+        "记忆系统的遗忘设计有何必要性？如何实现有选择的记忆压缩和淘汰？"
+      ],
+      "answer": "<h3>Agent 长期记忆系统设计</h3><h4>1. 四层记忆架构</h4><p><strong>Working Memory（工作记忆）</strong>：即 LLM 的上下文窗口，存储当前对话和任务状态，容量有限（4K-128K tokens），会话结束即丢失。<br/><strong>Episodic Memory（情节记忆）</strong>：存储过去交互的具体事件，通常以结构化文本或 embedding 存储在向量数据库（Qdrant/Chroma/Milvus），支持语义检索。<br/><strong>Semantic Memory（语义记忆）</strong>：结构化知识，如用户偏好、领域事实，可存储于 KV 数据库或知识图谱，按 key 精确查询。<br/><strong>Procedural Memory（程序记忆）</strong>：Agent 习得的技能和工作流，体现在 prompt 模板、工具调用策略中，通常需要人工或 RL 更新。</p><h4>2. 记忆写入策略</h4><p>推荐采用重要性阈值加触发机制：(1) 每轮对话结束后，LLM 自评该轮信息的重要性（0-1分）；(2) 超过阈值（如 0.7）则异步写入长期存储；(3) 任务完成事件强制触发写入（记录成功/失败原因）；(4) 用户明确标记（记住这个）立即写入并打高权重。写入前做去重和冲突检测，避免知识库污染。</p><h4>3. 检索策略</h4><p>多路混合检索：<strong>语义检索</strong>（embedding 相似度）捕获语义相关性；<strong>时间衰减</strong>对近期记忆加权（score *= exp(-lambda*days_ago)）；<strong>重要性评分</strong>在写入时由 LLM 标注，检索时作为 boost factor。MemGPT/Mem0 等框架采用分层检索：先粗筛 Top-50，再精排 Top-5，最后由 LLM 判断是否纳入上下文。过滤噪声：对检索结果做 MMR（最大边际相关性）去冗余，避免相似记忆重复占用上下文。</p><h4>4. 遗忘与压缩</h4><p>遗忘的必要性：避免存储爆炸和检索精度下降（长尾低质记忆稀释重要信息）。策略：(1) <strong>TTL 淘汰</strong>：低重要性加长时间未访问的记忆自动过期；(2) <strong>摘要压缩</strong>：将多条情节记忆定期由 LLM 压缩为语义摘要；(3) <strong>强化访问</strong>：被检索次数越多，权重越高，越不易被淘汰（类人类 Spaced Repetition）；(4) <strong>版本管理</strong>：语义记忆更新时保留历史版本，支持审计。</p>",
+      "tips": "结合 MemGPT、Mem0、Letta 等实际框架说明实现，重点分析检索时的 precision/recall 权衡，以及遗忘机制对 Agent 长期行为稳定性的影响。",
+      "date": "2026-05-20",
+      "id": "52fada665dd9",
+      "sources": [
+        {
+          "label": "腾讯 AI Agent 工程师 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=Agent&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
+        },
+        {
+          "label": "字节跳动 AI Agent 岗位 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=Agent&category=6704215862603155720"
+        }
+      ],
+      "refs": []
+    },
+    {
+      "title": "LLM 评估体系设计：从基准测试到生产监控的全链路 Eval 方案",
+      "difficulty": "medium",
+      "domain": "eval",
+      "questions": [
+        "当前主流 LLM 评估基准（MMLU、HumanEval、MT-Bench、HELM）各自评估什么维度？它们的局限性是什么？",
+        "如何设计针对特定业务场景（如客服、代码助手、RAG 问答）的定制化评估集？数据从哪来，如何标注，怎么防止数据泄漏？",
+        "LLM-as-Judge 方法的优势与偏差问题是什么？如何缓解评估模型的位置偏差、长度偏差和自我偏好？",
+        "在生产环境中如何持续监控模型质量退化？设计一个从数据采集到告警的完整 Eval Pipeline。"
+      ],
+      "answer": "<h3>LLM 全链路评估体系</h3><h4>1. 主流基准分析</h4><p><strong>MMLU</strong>：57 个学科选择题，评估知识广度，局限：多选题形式无法评估生成质量，答案可能被训练集污染。<br/><strong>HumanEval/MBPP</strong>：代码生成加单元测试验证，Pass@k 指标客观，局限：题目难度偏低，不代表实际工程任务复杂度。<br/><strong>MT-Bench</strong>：多轮对话 80 题，用 GPT-4 打分，评估指令遵循和推理，局限：依赖评估模型能力上限，强模型自评偏高。<br/><strong>HELM</strong>：全面性强，涵盖 40+ 场景，局限：更新慢，不反映最新能力边界。总体局限：基准污染（训练集泄漏）、静态快照（无法评估新能力）、与真实用户体验脱节。</p><h4>2. 定制化评估集设计</h4><p>数据来源：(1) 生产日志采样（脱敏）；(2) 专家构造（种子问题加 LLM 变形扩充）；(3) 对抗生成（故意构造边界 case）。标注策略：关键任务人工标注（高质量小集），辅助任务 LLM 预标注加人工抽验（经济高效）。防数据泄漏：评估集严格隔离于训练流程，用 Hash 追踪；定期轮换测试题目（防过拟合评估集）；使用私有保留集不公开题目。</p><h4>3. LLM-as-Judge 偏差缓解</h4><p>主要偏差：<strong>位置偏差</strong>（倾向选第一个回答）、<strong>长度偏差</strong>（更长不等于更好但模型倾向打高分）、<strong>自我偏好</strong>（用 GPT-4 评估时对 GPT-4 风格输出偏好）。缓解方案：(1) 双向评估（交换 A/B 顺序取平均）消除位置偏差；(2) 在 prompt 中明确要求长度不是质量标准；(3) 使用与被评模型家族不同的评估模型（如用 Claude 评 GPT）；(4) 多评估模型集成投票；(5) 关键场景回退人工评估。</p><h4>4. 生产 Eval Pipeline</h4><p>架构：<strong>采集层</strong>：生产流量 5-10% 采样 -> 脱敏 -> 写入评估队列；<strong>评估层</strong>：自动化指标（BLEU/ROUGE/代码执行）加 LLM-as-Judge 异步评分 -> 写入指标数据库；<strong>分析层</strong>：按 topic/user_segment/时间维度切片，检测指标趋势；<strong>告警层</strong>：设置质量分下降阈值（如 7 日均值下降 5% 以上）触发告警，自动生成失败样本报告；<strong>闭环层</strong>：失败样本进入人工审核队列，优质样本补充训练集。工具选型：Langfuse / Phoenix / Arize 用于监控；Pytest 加 CI 用于离线基准回归测试。</p>",
+      "tips": "结合具体业务场景（如 RAG 问答 Eval 需测 faithfulness/relevancy/groundedness）展开，说明 RAGAS 等框架的使用，并强调 Eval 体系本身需要版本管理和防退化机制。",
+      "date": "2026-05-20",
+      "id": "f0179cf61fcc",
+      "sources": [
+        {
+          "label": "阿里巴巴 大模型评测工程师 JD",
+          "url": "https://talent.alibaba.com/off-campus/position-list?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E8%AF%84%E6%B5%8B"
+        },
+        {
+          "label": "字节跳动 AI 质量工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=AI%E8%AF%84%E6%B5%8B&category=6704215862603155720"
+        }
+      ],
+      "refs": []
+    },
+    {
       "title": "请阐述 AI Agent 的核心架构组成（感知-决策-执行循环），并说明每个模块在实际系统中的实现要点和常见挑战。",
       "difficulty": "medium",
       "domain": "agent-arch",
@@ -229,5 +307,5 @@
       ]
     }
   ],
-  "updated_at": "2026-05-16T00:53:31.159766"
+  "updated_at": "2026-05-20T00:58:01.092007"
 }
