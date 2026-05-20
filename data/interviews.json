@@ -1,6 +1,84 @@
 {
   "items": [
     {
+      "title": "深入解析 Transformer 的位置编码演进：从绝对位置编码到 RoPE 的工程权衡",
+      "difficulty": "hard",
+      "domain": "llm-core",
+      "questions": [
+        "请对比 Sinusoidal、Learnable、ALiBi、RoPE 四种位置编码的核心思想及其优缺点",
+        "RoPE（旋转位置编码）的数学原理是什么？为什么它能天然支持相对位置感知？",
+        "在实际推理中，如何利用 RoPE 进行上下文长度外推（context length extension）？常见方法（NTK-aware scaling、YaRN 等）有何区别？",
+        "位置编码的选择对模型的泛化能力（尤其是超长序列）和推理性能有哪些影响？"
+      ],
+      "answer": "<h3>1. 主流位置编码对比</h3><p><b>Sinusoidal（正弦位置编码）</b>：OpenAI GPT 前的 Transformer 原始方案，用 sin/cos 函数的不同频率编码绝对位置。优点：无需训练参数，对任意长度序列天然有效；缺点：不携带相对位置信息，模型需从 Attention 中隐式学习。</p><p><b>Learnable（可学习绝对位置）</b>：BERT/GPT-2 采用，每个位置有独立嵌入向量。优点：灵活；缺点：训练长度即上限，外推能力差。</p><p><b>ALiBi（Attention with Linear Biases）</b>：在 Attention score 上加线性偏置 -m×|i-j|，不修改嵌入。优点：天然支持相对距离，外推能力强（Press et al., 2022）；缺点：对超长文本的精细建模不如 RoPE。</p><p><b>RoPE（旋转位置编码）</b>：LLaMA/Qwen/ChatGLM 等主流开源 LLM 选择。通过旋转矩阵将位置信息编码到 Q/K 向量，使点积自然体现相对位置差。优点：支持外推、与 Flash Attention 兼容、GPU 友好。</p><h3>2. RoPE 数学原理</h3><p>对位置 m 处的向量 x，RoPE 将其旋转角度 mθ，即 <code>f(x, m) = x · e^{imθ}</code>（复数表示）。Q·K 内积变成 <code>⟨f(q,m), f(k,n)⟩ = g(q,k,m-n)</code>，即只依赖相对距离 m-n，天然具有相对位置感知，无需显式位置差运算。</p><h3>3. 上下文长度外推</h3><p><b>Linear Scaling</b>：简单将 θ 按比例缩放，效果差，高频旋转信息失真。<b>NTK-aware Scaling</b>：基于神经正切核理论，对不同频率维度采用不同缩放系数，保留高频细粒度信息，效果显著提升（可将 4K 模型外推到 32K+）。<b>YaRN</b>：进一步改进，按频率划分三段（插值/NTK/不变），额外引入注意力温度调整，在长文本 perplexity 上表现更优，已被 Mistral、DeepSeek 采用。</p><h3>4. 工程影响</h3><p>位置编码直接影响模型在超长序列（100K+ tokens）的推理质量；RoPE + Flash Attention 2 是当前主流推理框架（vLLM、SGLang）的标配；外推方法的选择需结合实际业务序列长度分布做 ablation，避免为追求极限长度牺牲常用长度的精度。</p>",
+      "tips": "作答要点：(1) 能说清楚 Sinusoidal/ALiBi/RoPE 三者的核心差异；(2) RoPE 的复数旋转原理及相对位置感知推导；(3) NTK-aware vs YaRN 的区别，能给出实际使用场景；(4) 工程落地时的注意事项（Flash Attention 兼容性、微调 vs zero-shot 外推）",
+      "date": "2026-05-21",
+      "id": "5024e767dbcf",
+      "sources": [
+        {
+          "label": "字节跳动 LLM 算法工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=LLM%E7%AE%97%E6%B3%95&category=6704215862603155720"
+        },
+        {
+          "label": "腾讯 大模型算法岗 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
+        }
+      ],
+      "refs": []
+    },
+    {
+      "title": "AI Agent 长期记忆系统设计：存储层次、遗忘机制与检索优化",
+      "difficulty": "hard",
+      "domain": "memory",
+      "questions": [
+        "请描述 AI Agent 记忆系统的四层架构（感官/工作/情节/语义记忆），各层在工程上如何实现？",
+        "如何设计记忆的写入策略：何时写、写什么、如何避免记忆污染和噪音积累？",
+        "在记忆检索中，如何结合稀疏检索（BM25）和稠密检索（向量搜索）提升召回质量？如何实现时间衰减感知的重要性排序？",
+        "在多用户/多会话的生产环境中，记忆系统需要解决哪些隔离性、一致性和成本控制问题？"
+      ],
+      "answer": "<h3>1. 四层记忆架构</h3><p><b>感官记忆（Sensory）</b>：原始输入的短暂缓存（毫秒到秒），如原始图片/音频 embedding，工程上通常不持久化。<b>工作记忆（Working）</b>：当前 context window 中的信息，受 token 限制，通过 prompt 组装实现，容量是最大瓶颈。<b>情节记忆（Episodic）</b>：历史对话/事件的摘要记录，持久化存储，通过时间戳+用户 ID 索引，向量 DB（Chroma/Pinecone/Milvus）存储 embedding。<b>语义记忆（Semantic）</b>：从情节中提炼的知识/事实，结构化存储（KG 或键值对），用于长期稳定知识的高效查询。</p><h3>2. 记忆写入策略</h3><p><b>触发时机</b>：对话结束后异步写入（避免阻塞响应）；重要事件实时写入（如用户偏好变更）。<b>写什么</b>：用 LLM 对对话摘要提取关键信息（实体、关系、决策），而非全量存储原文，降低噪音和存储成本。<b>去重与验证</b>：写入前与现有记忆做相似度检查（cosine > 0.92 则更新而非新增），防止重复和矛盾记忆积累；可引入置信度分数，低置信度记忆设短 TTL。</p><h3>3. 检索优化</h3><p><b>混合检索（Hybrid Search）</b>：BM25 负责精确关键词（如人名、日期、专有名词），向量搜索负责语义相关性，用 RRF（Reciprocal Rank Fusion）合并排序，比单一方法 Recall@10 通常提升 10-15%。<b>时间衰减</b>：重要性分数 = 语义相关度 × exp(-λ×Δt)，λ 根据业务场景调整（短期助手 λ 大，知识库 λ 小）；最近访问也可作为重要度信号（参考 MemGPT 的 recency 机制）。</p><h3>4. 生产环境挑战</h3><p><b>隔离性</b>：多用户必须强隔离（命名空间 + tenant_id 过滤），避免记忆泄漏；<b>一致性</b>：写入失败需幂等重试，避免产生重复记忆；<b>成本控制</b>：热冷分层存储（近 30 天 SSD，30 天以上对象存储），embedding 批量异步生成，定期 compaction 合并冗余记忆。</p>",
+      "tips": "作答要点：(1) 能清楚区分四层记忆及其工程实现，不要混淆；(2) 写入策略中强调异步、摘要提取、去重三点；(3) 混合检索要能说出 RRF 融合方式；(4) 时间衰减公式及参数调优思路；(5) 生产环境隔离性是加分点",
+      "date": "2026-05-21",
+      "id": "4d49c1da1f02",
+      "sources": [
+        {
+          "label": "字节跳动 AI 应用工程师 JD",
+          "url": "https://jobs.bytedance.com/experienced/position?keywords=%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%BA%94%E7%94%A8&category=6704215862603155720"
+        },
+        {
+          "label": "百度 大模型工程师 JD",
+          "url": "https://talent.baidu.com/external/baidu/index.html#/pc/listPage/recruit?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"
+        }
+      ],
+      "refs": []
+    },
+    {
+      "title": "LLM 推理服务工程化：从单机优化到集群调度的全链路设计",
+      "difficulty": "hard",
+      "domain": "engineering",
+      "questions": [
+        "请对比 vLLM、SGLang、TGI（Text Generation Inference）三个主流推理框架的核心差异和各自适用场景",
+        "在单机多卡部署中，张量并行（Tensor Parallelism）和流水线并行（Pipeline Parallelism）各有什么优缺点？何时选择哪种？",
+        "如何设计一个支持数千 QPS 的 LLM 推理集群？请从负载均衡、路由策略、扩缩容三方面展开",
+        "在实际线上系统中，如何监控 LLM 推理服务的关键指标（TTFT、TBT、P99 延迟），并进行容量规划？"
+      ],
+      "answer": "<h3>1. 主流框架对比</h3><p><b>vLLM</b>：PagedAttention 发明者，连续批处理（Continuous Batching）成熟，KV Cache 管理最优，生态最广（支持 Llama/Mistral/Qwen 等），适合高吞吐场景，社区最活跃。<b>SGLang</b>：专注复杂 Agentic 工作流，RadixAttention 对 prefix sharing 优化极强（多 Agent 共享系统 Prompt 场景吞吐提升 4-8×），有结构化输出加速（JSON grammar）。<b>TGI（HuggingFace）</b>：与 HF 生态集成最好，部署最简单，适合小规模/内部服务；但吞吐和延迟优化不如 vLLM/SGLang。</p><h3>2. 并行策略选择</h3><p><b>张量并行（TP）</b>：将矩阵乘法分片到多卡，All-Reduce 通信频繁，适合单机多卡（NVLink 带宽大），延迟低，是最常用方案（TP=4 或 8）。<b>流水线并行（PP）</b>：按 Transformer 层切分，bubble time 是效率杀手（micro-batch 可缓解），适合跨节点多机（InfiniBand）或超大模型（70B+）。实践：单节点 ≤ 8 卡优先 TP；跨节点或 >8 卡考虑 TP+PP 混合；避免纯 PP 单卡使用率低的问题。</p><h3>3. 大规模集群设计</h3><p><b>负载均衡</b>：基于请求 token 数的加权轮询（而非简单 Round Robin），避免长序列打满单机；session affinity 保证同对话路由到同实例（利用 prefix cache）。<b>路由策略</b>：前缀感知路由（prefix-aware routing）将相同系统 Prompt 的请求路由到同一实例，最大化 KV Cache 复用率；可用 consistent hashing on prefix hash 实现。<b>扩缩容</b>：基于 GPU 利用率 + 队列深度双指标，scale-out 触发阈值 GPU util > 85% 持续 2min；scale-in 需 drain inflight 请求后再缩，避免请求中断。</p><h3>4. 监控与容量规划</h3><p><b>关键指标</b>：TTFT（Time To First Token）衡量用户感知延迟（P50/P95/P99）；TBT（Time Between Tokens）衡量流式输出流畅度；吞吐（tokens/s/GPU）衡量成本效率；KV Cache 命中率衡量 prefix cache 效果。<b>容量规划</b>：用 Little's Law：并发数 = QPS × 平均响应时间；根据 P99 延迟 SLO 反推最大并发上限，再除以单实例最大并发得出实例数；留 30% buffer 应对流量峰值。告警：TTFT P99 > 3s 或 KV Cache 命中率 < 30% 触发扩容告警。</p>",
+      "tips": "作答要点：(1) 三框架能说出核心差异和适用场景（不能笼统说'都很好'）；(2) TP vs PP 要能给出选择依据（通信带宽、模型大小、节点数）；(3) 集群设计三点必须都覆盖到；(4) 监控要能说出 TTFT 和 TBT 的区别，以及 Little's Law 容量规划",
+      "date": "2026-05-21",
+      "id": "30430599e78b",
+      "sources": [
+        {
+          "label": "腾讯 AI 后端工程师 JD",
+          "url": "https://careers.tencent.com/jobopportunity.html#!?keywords=AI%E5%90%8E%E7%AB%AF&experienceList=&employmentTypeList=&categoryList=40001%2C40002%2C40003&cityList="
+        },
+        {
+          "label": "美团 AI 工程师 JD",
+          "url": "https://zhaopin.meituan.com/?keywords=Agent%E5%A4%A7%E6%A8%A1%E5%9E%8B"
+        }
+      ],
+      "refs": []
+    },
+    {
       "title": "深入解析 Transformer 中的 Attention 机制变体：MHA、MQA、GQA 的原理与工程权衡",
       "difficulty": "hard",
       "domain": "llm-core",
@@ -307,5 +385,5 @@
       ]
     }
   ],
-  "updated_at": "2026-05-20T00:58:01.092007"
+  "updated_at": "2026-05-21T00:57:57.946509"
 }
